@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+venv/
+.env
+.env.*
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Database
+data.db
+
+# Alembic
+alembic/versions/*.pyc
+
+# Logs
+*.log
+
+# Jupyter
+*.ipynb_checkpoints
+
+# Compiled
+*.egg-info/
+dist/
+build/
+
+# Vector store and company uploads
+vector_store/
+companies/
+
+# Test cache
+.pytest_cache/
