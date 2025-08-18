@@ -13,6 +13,14 @@ from .callbacks import ReasoningCaptureHandler
 models.Base.metadata.create_all(bind=database.engine)
 app = FastAPI(title="PDF QA API with Agents", version="4.0.0")
 
+BASE_COMPANY_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "companies")
+
+def create_company_folder(company_name):
+    os.makedirs(BASE_COMPANY_DIR, exist_ok=True)
+    company_path = os.path.join(BASE_COMPANY_DIR, company_name)
+    os.makedirs(company_path, exist_ok=True)
+    return company_path
+
 @app.post("/auth/login", response_model=schemas.Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
     user = crud.get_user_by_username(db, form_data.username)
@@ -44,10 +52,13 @@ async def update_user(user_id: int, user_update: schemas.UserUpdate, db: Session
 
 @app.post("/companies", dependencies=[Depends(auth.admin_required)])
 async def create_company(company: schemas.CompanyCreate, db: Session = Depends(database.get_db)):
+    existing = db.query(models.Company).filter(models.Company.name == company.name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Company name already exists")
     db_company = models.Company(name=company.name)
     db.add(db_company)
     db.commit()
-    os.makedirs(f"companies/{company.name}", exist_ok=True)
+    create_company_folder(company.name)
     return {"message": "Company created"}
 
 @app.patch("/companies/{company_id}", dependencies=[Depends(auth.admin_required)])
@@ -67,7 +78,7 @@ async def upload_pdf(company_id: int, file: UploadFile, db: Session = Depends(da
     company = db.query(models.Company).filter(models.Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
-    os.makedirs(f"companies/{company.name}", exist_ok=True)
+    create_company_folder(company.name)
     with open(os.path.join(f"companies/{company.name}", file.filename), "wb") as f:
         f.write(await file.read())
     await build_or_update_vector_store(company.name, auth.embeddings)

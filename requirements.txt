@@ -12,6 +12,7 @@ python-dotenv
 python-jose
 sqlalchemy
 alembic
+bcrypt<4.1.0
 passlib[bcrypt]
 langchain-community
 langchain-openai

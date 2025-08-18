@@ -61,14 +61,24 @@ insurance/
 5. **Configure environment variables:**
    - Copy `.env.example` to `.env` and update values as needed (e.g., database URL, OpenAI API key).
 
-6. **Run database migrations:**
+6. **Initialize Alembic (if not already initialized):**
+   ```sh
+   alembic init alembic
+   ```
+
+7. **Run database migrations:**
    ```sh
    alembic upgrade head
    ```
 
-7. **Run the application:**
+8. **Run the application:**
    ```sh
    uvicorn app.main:app --reload
+   ```
+   
+9. **Create initial migration (if not already created):**
+   ```sh
+   alembic revision --autogenerate -m "Initial"
    ```
 
 ## Usage

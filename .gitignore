@@ -8,10 +8,7 @@ __pycache__/
 # Virtual environments
 venv/
 .env
-.env.*
 
-# VSCode
-.vscode/
 
 # OS files
 .DS_Store
