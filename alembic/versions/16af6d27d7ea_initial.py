@@ -9,7 +9,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from passlib.context import CryptContext
 
 
 # revision identifiers, used by Alembic.
@@ -17,8 +16,6 @@ revision: str = '16af6d27d7ea'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def upgrade() -> None:
@@ -79,12 +76,6 @@ def upgrade() -> None:
     op.create_index(op.f('ix_qa_logs_id'), 'qa_logs', ['id'], unique=False)
     op.create_index(op.f('ix_qa_logs_timestamp'), 'qa_logs', ['timestamp'], unique=False)
     # ### end Alembic commands ###
-
-    # Seed admin user
-    conn = op.get_bind()
-    hashed = pwd_context.hash("password")
-    conn.execute(sa.text("INSERT INTO users (username, password_hash, role) VALUES (:u, :p, :r)"),
-                 {"u": "admin", "p": hashed, "r": "admin"})
 
 
 def downgrade() -> None:

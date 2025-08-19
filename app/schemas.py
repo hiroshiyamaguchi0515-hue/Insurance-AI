@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from pydantic import ConfigDict
 from typing import Optional, List
 from datetime import datetime
@@ -15,11 +15,6 @@ class TokenData(BaseModel):
 class LoginRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=1)
-    secret: Optional[str] = None
-    client_id: Optional[str] = None
-    client_secret: Optional[str] = None
-    otp: Optional[str] = None
-    scope: Optional[List[str]] = None
 
     # Allow unknown extra fields without raising 422, for maximum compatibility
     model_config = ConfigDict(extra='ignore')
@@ -72,17 +67,34 @@ class UserResponse(UserBase):
         from_attributes = True
 
 class CompanyCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100, description="Company name must be 1-100 characters")
+    name: str = Field(..., min_length=1, max_length=100)
+    model_name: str = Field(..., description="OpenAI model name (e.g., gpt-3.5-turbo, gpt-4)")
+    temperature: float = Field(..., ge=0.0, le=2.0, description="Model temperature (0.0 to 2.0)")
+    max_tokens: int = Field(1000, ge=1, le=4000, description="Maximum tokens for responses")
     
-    @validator('name')
-    def validate_company_name(cls, v):
-        if not re.match("^[a-zA-Z0-9_\\- ]+$", v):
-            raise ValueError("Company name can only contain letters, numbers, spaces, underscores, and hyphens")
-        return v.strip()
+    # Validate model name format
+    @field_validator('model_name')
+    @classmethod
+    def validate_model_name(cls, v):
+        import re
+        if not re.match(r'^[a-zA-Z0-9\-\._]+$', v):
+            raise ValueError('Model name can only contain alphanumeric characters, hyphens, dots, and underscores')
+        if len(v) > 50:
+            raise ValueError('Model name too long. Maximum 50 characters allowed.')
+        return v
+    
+    # Validate temperature range
+    @field_validator('temperature')
+    @classmethod
+    def validate_temperature(cls, v):
+        if not (0.0 <= v <= 2.0):
+            raise ValueError('Temperature must be between 0.0 and 2.0')
+        return v
 
 class CompanyUpdate(BaseModel):
-    model_name: Optional[str] = Field(None, pattern="^gpt-[34].*", description="Must be a valid GPT model")
-    temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="Temperature must be between 0.0 and 2.0")
+    model_name: Optional[str] = Field(None, description="OpenAI model name (e.g., gpt-3.5-turbo, gpt-4)")
+    temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="Model temperature (0.0 to 2.0)")
+    max_tokens: Optional[int] = Field(None, ge=1, le=4000, description="Maximum tokens for responses")
 
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=2000, description="Question must be 1-2000 characters")
@@ -111,7 +123,8 @@ class CompanyResponse(BaseModel):
     id: int
     name: str
     model_name: str
-    temperature: float  # Changed from int to float
+    temperature: float
+    max_tokens: int
 
     class Config:
         from_attributes = True

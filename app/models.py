@@ -12,6 +12,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     password_hash = Column(String(128), nullable=False)
+    email = Column(String(100), unique=True, index=True, nullable=False)
     role = Column(String(20), default="normal", nullable=False)
     qa_logs = relationship("QALog", back_populates="user", cascade="all, delete-orphan")
     agent_logs = relationship("AgentLog", back_populates="user", cascade="all, delete-orphan")
@@ -21,7 +22,8 @@ class Company(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, index=True, nullable=False)
     model_name = Column(String(50), default="gpt-4-0125-preview", nullable=False)
-    temperature = Column(Float, default=0.0, nullable=False)  # Changed from Integer to Float
+    temperature = Column(Float, default=0.0, nullable=False)
+    max_tokens = Column(Integer, default=1000, nullable=False)
     pdfs = relationship("PDFFile", back_populates="company", cascade="all, delete-orphan")
     qa_logs = relationship("QALog", back_populates="company", cascade="all, delete-orphan")
     agent_logs = relationship("AgentLog", back_populates="company", cascade="all, delete-orphan")
@@ -32,6 +34,7 @@ class PDFFile(Base):
     filename = Column(String(200), nullable=False)
     company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     upload_timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    file_size = Column(Integer, nullable=False)
     company = relationship("Company", back_populates="pdfs")
 
 class QALog(Base):

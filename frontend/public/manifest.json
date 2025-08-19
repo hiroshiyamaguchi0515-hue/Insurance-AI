@@ -1,0 +1,13 @@
+{
+  "short_name": "Insurance PDF",
+  "name": "Insurance PDF Analysis System",
+  "description": "AI-powered PDF document analysis and question answering system",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1976d2",
+  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "en"
+} 

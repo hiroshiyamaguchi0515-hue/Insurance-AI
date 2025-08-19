@@ -57,7 +57,12 @@ A secure, AI-powered PDF Question Answering API with multi-company support, feat
    # Edit .env with your actual values
    ```
 
-5. **Run database migrations**
+5. **Create initial migration**
+   ```bash
+   alembic revision --autogenerate -m "Initial"
+   ```
+
+6. **Run database migrations**
    ```bash
    alembic upgrade head
    ```
@@ -134,6 +139,7 @@ Once running, visit:
      -H "Content-Type: application/json" \
      -d '{
        "username": "admin",
+       "email": "admin@example.com",
        "password": "SecurePass123",
        "role": "admin"
      }'

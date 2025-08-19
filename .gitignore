@@ -37,3 +37,7 @@ companies/
 
 # Test cache
 .pytest_cache/
+
+# Frontend
+node_modules
+# frontend

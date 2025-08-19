@@ -19,8 +19,8 @@ if SECRET_KEY == "dev-secret-key-change-in-production":
     warnings.warn("Using default JWT secret key. Set JWT_SECRET_KEY environment variable for production!")
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 15
-REFRESH_TOKEN_EXPIRE_DAYS = 7
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 # Use HTTP Bearer instead of OAuth2 password flow so Swagger does not force form-encoded login
 bearer_scheme = HTTPBearer(auto_error=True)
