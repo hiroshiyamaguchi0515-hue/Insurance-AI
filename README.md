@@ -1,104 +1,315 @@
-# Insurance Application
+# PDF QA API with Agents
 
-## Overview
-This project is an insurance application designed to manage various aspects of insurance services, including user authentication, database management, PDF processing, and vector storage integration.
+A secure, AI-powered PDF Question Answering API with multi-company support, featuring advanced authentication, rate limiting, and comprehensive error handling.
 
-## Directory Structure
-```
-insurance/
-├── alembic/                # Database migration scripts and configuration
-│   ├── env.py              # Alembic environment configuration
-│   └── versions/           # Migration versions
-│       └── 20250805_init.py # Initial migration script
-├── alembic.ini             # Alembic configuration file
-├── app/                    # Main application code
-│   ├── __init__.py         # Application package initialization
-│   ├── auth.py             # Authentication logic (JWT, password hashing)
-│   ├── crud.py             # CRUD operations for database models
-│   ├── database.py         # Database connection and session management
-│   ├── dependencies.py     # FastAPI dependency definitions
-│   ├── main.py             # FastAPI application entry point
-│   ├── models.py           # SQLAlchemy database models
-│   ├── schemas.py          # Pydantic schemas for data validation
-│   ├── utils.py            # Utility functions (e.g., password hashing)
-│   └── vector_store_utils.py # Vector storage and retrieval utilities
-├── companies/              # Placeholder for company-related features
-├── vector_store/           # Placeholder for vector storage features
-├── .env                    # Environment variables (API keys, DB URL, etc.)
-├── requirements.txt        # Python dependencies
-├── data.db                 # SQLite database (auto-created)
-└── README.md               # Project documentation
-```
+## 🚀 Features
 
-## Setup Instructions
+- **Multi-Company Support**: Separate knowledge bases for different companies
+- **AI-Powered QA**: Uses OpenAI GPT models for intelligent question answering
+- **Agent System**: Conversational agents with memory and reasoning capabilities
+- **Secure Authentication**: JWT-based authentication with role-based access control
+- **Rate Limiting**: Built-in rate limiting to prevent abuse
+- **File Upload Security**: Secure PDF upload with validation and size limits
+- **Comprehensive Logging**: Detailed logging for monitoring and debugging
+- **Database Migrations**: Alembic-based database schema management
 
-1. **Clone the repository:**
-   ```sh
+## 🔒 Security Features
+
+- JWT token authentication with configurable expiration
+- Password hashing using bcrypt
+- Role-based access control (admin/normal users)
+- Rate limiting on all endpoints
+- Input validation and sanitization
+- File upload security with size and type validation
+- CORS protection
+- Trusted host middleware
+- Comprehensive error handling without information leakage
+
+## 📋 Prerequisites
+
+- Python 3.8+
+- OpenAI API key
+- SQLite (default) or PostgreSQL
+- Tesseract OCR (for image text extraction)
+
+## 🛠️ Installation
+
+1. **Clone the repository**
+   ```bash
    git clone <repository-url>
    cd insurance
    ```
 
-2. **Create a virtual environment:**
-   ```sh
+2. **Create virtual environment**
+   ```bash
    python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. **Activate the virtual environment:**
-   - On Windows:
-     ```sh
-     venv\Scripts\activate
-     ```
-   - On macOS/Linux:
-     ```sh
-     source venv/bin/activate
-     ```
-
-4. **Install the required dependencies:**
-   ```sh
+3. **Install dependencies**
+   ```bash
    pip install -r requirements.txt
    ```
 
-5. **Configure environment variables:**
-   - Copy `.env.example` to `.env` and update values as needed (e.g., database URL, OpenAI API key).
-
-6. **Initialize Alembic (if not already initialized):**
-   ```sh
-   alembic init alembic
+4. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your actual values
    ```
 
-7. **Run database migrations:**
-   ```sh
+5. **Run database migrations**
+   ```bash
    alembic upgrade head
    ```
 
-8. **Run the application:**
-   ```sh
-   uvicorn app.main:app --reload
+## ⚙️ Configuration
+
+### Environment Variables
+
+Create a `.env` file with the following variables:
+
+```env
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+
+# JWT Security Configuration (CHANGE IN PRODUCTION!)
+JWT_SECRET_KEY=your_secure_jwt_secret_key_here
+
+# Database Configuration (optional - defaults to SQLite)
+DATABASE_URL=sqlite:///./data.db
+
+# Application Configuration
+ENVIRONMENT=development
+LOG_LEVEL=INFO
+
+# Rate Limiting Configuration
+RATE_LIMIT_ENABLED=true
+```
+
+### Security Configuration
+
+**IMPORTANT**: For production deployment:
+
+1. **Generate a secure JWT secret key**:
+   ```bash
+   python -c "import secrets; print(secrets.token_urlsafe(32))"
    ```
+
+2. **Update CORS origins** in `main.py`:
+   ```python
+   allow_origins=["https://yourdomain.com", "https://app.yourdomain.com"]
+   ```
+
+3. **Update trusted hosts** in `main.py`:
+   ```python
+   allowed_hosts=["yourdomain.com", "*.yourdomain.com"]
+   ```
+
+## 🚀 Running the Application
+
+### Development
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Production
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+## 📚 API Documentation
+
+Once running, visit:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+## 🔐 Authentication
+
+### Creating Admin User
+
+1. **Start the application**
+2. **Use the API to create an admin user**:
+   ```bash
+   curl -X POST "http://localhost:8000/users" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "username": "admin",
+       "password": "SecurePass123",
+       "role": "admin"
+     }'
+   ```
+
+### Login
+
+```bash
+curl -X POST "http://localhost:8000/auth/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=SecurePass123"
+```
+
+## 📖 API Usage Examples
+
+### 1. Create a Company
+```bash
+curl -X POST "http://localhost:8000/companies" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Acme Corp"}'
+```
+
+### 2. Upload PDF
+```bash
+curl -X POST "http://localhost:8000/companies/1/pdfs" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "file=@document.pdf"
+```
+
+### 3. Ask Questions
+```bash
+curl -X POST "http://localhost:8000/companies/1/ask" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What are the insurance terms?"}'
+```
+
+### 4. Use Agent
+```bash
+curl -X POST "http://localhost:8000/companies/1/agent/ask" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Explain the coverage details"}'
+```
+
+## 🛡️ Security Best Practices
+
+### 1. Environment Variables
+- Never commit `.env` files to version control
+- Use different secrets for each environment
+- Rotate secrets regularly
+
+### 2. API Keys
+- Store OpenAI API keys securely
+- Monitor API usage and costs
+- Implement API key rotation
+
+### 3. File Uploads
+- Validate file types and sizes
+- Scan uploaded files for malware
+- Store files securely
+
+### 4. Database Security
+- Use strong database passwords
+- Enable database encryption
+- Regular backups
+
+### 5. Network Security
+- Use HTTPS in production
+- Configure firewall rules
+- Implement proper CORS policies
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+1. **Import Errors**
+   - Ensure all dependencies are installed
+   - Check Python version compatibility
+
+2. **Database Errors**
+   - Run `alembic upgrade head` to apply migrations
+   - Check database file permissions
+
+3. **OpenAI API Errors**
+   - Verify API key is correct
+   - Check API quota and billing
+   - Ensure network connectivity
+
+4. **File Upload Issues**
+   - Check file size limits (50MB default)
+   - Ensure PDF files are valid
+   - Verify directory permissions
+
+### Logs
+
+Check application logs for detailed error information:
+```bash
+tail -f logs/app.log
+```
+
+## 📊 Monitoring
+
+### Health Check
+```bash
+curl http://localhost:8000/health
+```
+
+### Metrics to Monitor
+- API response times
+- Error rates
+- File upload success rates
+- OpenAI API usage and costs
+- Database performance
+
+## 🚀 Deployment
+
+### Docker Deployment
+
+1. **Create Dockerfile**:
+   ```dockerfile
+   FROM python:3.9-slim
    
-9. **Create initial migration (if not already created):**
-   ```sh
-   alembic revision --autogenerate -m "Initial"
+   WORKDIR /app
+   COPY requirements.txt .
+   RUN pip install -r requirements.txt
+   
+   COPY . .
+   EXPOSE 8000
+   
+   CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
    ```
 
-## Usage
+2. **Build and run**:
+   ```bash
+   docker build -t pdf-qa-api .
+   docker run -p 8000:8000 --env-file .env pdf-qa-api
+   ```
 
-- Access the FastAPI application at the specified server URL (default: `http://127.0.0.1:8000`).
-- Use authentication endpoints for user login and registration.
-- Upload and process PDF files using integrated PDF and OCR tools.
-- Interact with the database through CRUD endpoints.
-- Utilize vector storage features for advanced search and retrieval.
+### Production Considerations
 
-## Dependencies
+1. **Use a production WSGI server** (Gunicorn)
+2. **Set up reverse proxy** (Nginx)
+3. **Configure SSL/TLS certificates**
+4. **Set up monitoring and alerting**
+5. **Implement backup strategies**
+6. **Use environment-specific configurations**
 
-Key packages used:
-- `fastapi`, `uvicorn` — Web framework and ASGI server
-- `sqlalchemy`, `alembic` — ORM and migrations
-- `python-jose`, `passlib[bcrypt]` — Authentication and password hashing
-- `pymupdf`, `pdfplumber`, `pytesseract`, `Pillow` — PDF and OCR processing
-- `langchain`, `openai`, `faiss-cpu`, `tiktoken` — LLM and vector storage integration
-- `python-dotenv` — Environment variable management
+## 🤝 Contributing
 
-## Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
 
-Contributions are welcome! Please submit a pull request or open an issue for any enhancements or bug fixes.
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the troubleshooting section
+- Review the API documentation
+
+## 🔄 Changelog
+
+### v4.1.0
+- Fixed circular import issues
+- Added comprehensive error handling
+- Implemented rate limiting
+- Enhanced security features
+- Added input validation
+- Fixed database schema issues
+- Added CORS and security middleware
+- Improved logging and monitoring

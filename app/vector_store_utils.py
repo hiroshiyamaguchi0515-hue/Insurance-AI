@@ -1,8 +1,8 @@
 import os, io, glob, json, asyncio
 import pdfplumber, pytesseract
 from PIL import Image
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.docstore.document import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 from langchain_community.vectorstores import FAISS
 from .utils import save_processed_files, load_processed_files
 
@@ -51,7 +51,7 @@ async def build_or_update_vector_store(company_name, embeddings, use_ocr=False, 
         save_processed_files(vector_path, {os.path.basename(p) for p in glob.glob(os.path.join(company_pdf_dir, '*.pdf'))})
         return vector_store
 
-    vector_store = FAISS.load_local(vector_path, embeddings)
+    vector_store = FAISS.load_local(vector_path, embeddings, allow_dangerous_deserialization=True)
     processed_files = load_processed_files(vector_path)
     new_pdfs = [p for p in glob.glob(os.path.join(company_pdf_dir, "*.pdf")) if os.path.basename(p) not in processed_files]
     if not new_pdfs:

@@ -5,8 +5,8 @@ import json
 import pytesseract
 from PIL import Image
 import pdfplumber
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.docstore.document import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 from langchain_community.vectorstores import FAISS
 
 BASE_COMPANY_DIR = "companies"
@@ -64,7 +64,6 @@ def delete_pdf_and_reindex(company_name, filename, embeddings, use_ocr=False):
     if os.path.exists(file_path):
         os.remove(file_path)
     # Rebuild index completely
-    from utils import build_or_update_vector_store
     return build_or_update_vector_store(company_name, embeddings, use_ocr, rebuild=True)
 
 def build_or_update_vector_store(company_name, embeddings, use_ocr=False, rebuild=False):
@@ -101,3 +100,4 @@ def build_or_update_vector_store(company_name, embeddings, use_ocr=False, rebuil
     vector_store.save_local(vector_path)
     save_processed_files(vector_path, processed_files)
     return vector_store
+
