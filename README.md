@@ -17,7 +17,7 @@ A secure, AI-powered PDF Question Answering API with multi-company support, feat
 
 - JWT token authentication with configurable expiration
 - Password hashing using bcrypt
-- Role-based access control (admin/normal users)
+- Role-based access control (admin/user users)
 - Rate limiting on all endpoints
 - Input validation and sanitization
 - File upload security with size and type validation

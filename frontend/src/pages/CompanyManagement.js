@@ -9,26 +9,27 @@ import {
   DialogActions,
   TextField,
   Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
-  IconButton,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
+  IconButton,
+  Chip,
   Alert,
+  FormControl,
   FormHelperText,
+  MenuItem,
+  Paper,
+  InputLabel,
+  Select,
 } from '@mui/material';
 import { Add, Edit, Delete, Business, Warning } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { api, endpoints } from '../services/api';
 import toast from 'react-hot-toast';
+import { parseApiError } from '../utils/errorHandler';
 import { useTranslation } from 'react-i18next';
 
 const CompanyManagement = () => {
@@ -46,9 +47,22 @@ const CompanyManagement = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
 
+  // Helper function to safely get count values
+  const getSafeCount = (value, defaultValue = 0) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = parseInt(value, 10);
+      return isNaN(parsed) ? defaultValue : parsed;
+    }
+    return defaultValue;
+  };
+
   // Fetch companies
   const { data: companies, isLoading } = useQuery('companies', () =>
-    api.get(endpoints.adminCompanies).then(res => res.data)
+    api.get(endpoints.adminCompanies).then(res => {
+      console.log('Companies API response:', res.data);
+      return res.data;
+    })
   );
 
   // Fetch OpenAI models
@@ -60,8 +74,8 @@ const CompanyManagement = () => {
         setOpenaiModels(data.models || []);
       },
       onError: error => {
-        toast.error('Failed to load OpenAI models. Please try again.');
-        console.error('Error loading OpenAI models:', error);
+        const errorMessage = parseApiError(error);
+        toast.error(errorMessage);
       },
     }
   );
@@ -86,7 +100,8 @@ const CompanyManagement = () => {
         handleCloseDialog();
       },
       onError: error => {
-        toast.error(error.response?.data?.detail || 'Operation failed');
+        const errorMessage = parseApiError(error);
+        toast.error(errorMessage);
       },
     }
   );
@@ -100,7 +115,8 @@ const CompanyManagement = () => {
         queryClient.invalidateQueries('companies');
       },
       onError: error => {
-        toast.error(error.response?.data?.detail || 'Delete failed');
+        const errorMessage = parseApiError(error);
+        toast.error(errorMessage);
       },
     }
   );
@@ -240,7 +256,10 @@ const CompanyManagement = () => {
               <TableCell>AI Model</TableCell>
               <TableCell>Temperature</TableCell>
               <TableCell>Max Tokens</TableCell>
+              <TableCell>Created</TableCell>
+              <TableCell>Updated</TableCell>
               <TableCell>Documents</TableCell>
+              <TableCell>Activity Logs</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
@@ -267,15 +286,47 @@ const CompanyManagement = () => {
                 <TableCell>{company.temperature}</TableCell>
                 <TableCell>{company.max_tokens}</TableCell>
                 <TableCell>
+                  <Typography variant='body2' color='text.secondary'>
+                    {company.created_at
+                      ? new Date(company.created_at).toLocaleDateString()
+                      : 'N/A'}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant='body2' color='text.secondary'>
+                    {company.updated_at
+                      ? new Date(company.updated_at).toLocaleDateString()
+                      : 'N/A'}
+                  </Typography>
+                </TableCell>
+                <TableCell>
                   <Box display='flex' alignItems='center'>
                     {/* Description icon removed as per edit hint */}
-                    {company.pdf_count || 0}
+                    {getSafeCount(company.pdf_count)}
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box display='flex' flexDirection='column' gap={0.5}>
+                    <Typography variant='caption' color='text.secondary'>
+                      QA: {getSafeCount(company.qa_logs_count)}
+                    </Typography>
+                    <Typography variant='caption' color='text.secondary'>
+                      Agent: {getSafeCount(company.agent_logs_count)}
+                    </Typography>
                   </Box>
                 </TableCell>
                 <TableCell>
                   <Chip
-                    label={company.pdf_count > 0 ? 'Active' : 'No Documents'}
-                    color={company.pdf_count > 0 ? 'success' : 'default'}
+                    label={
+                      getSafeCount(company.pdf_count) > 0
+                        ? 'Active'
+                        : 'No Documents'
+                    }
+                    color={
+                      getSafeCount(company.pdf_count) > 0
+                        ? 'success'
+                        : 'default'
+                    }
                     size='small'
                   />
                 </TableCell>

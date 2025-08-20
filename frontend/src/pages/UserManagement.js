@@ -31,6 +31,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
+import { parseApiError } from '../utils/errorHandler';
 
 const UserManagement = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -46,8 +47,15 @@ const UserManagement = () => {
   const queryClient = useQueryClient();
 
   // Fetch users
-  const { data: users, isLoading } = useQuery('users', () =>
-    api.get('/admin/users').then(res => res.data)
+  const {
+    data: users,
+    isLoading,
+    error: usersError,
+  } = useQuery('users', () =>
+    api.get('/admin/users').then(res => {
+      console.log('Users API response:', res.data);
+      return res.data;
+    })
   );
 
   // Create/Update user mutation
@@ -60,17 +68,23 @@ const UserManagement = () => {
       }
     },
     {
-      onSuccess: () => {
+      onSuccess: response => {
+        console.log('User mutation success response:', response);
         toast.success(
           editingUser
             ? 'User updated successfully!'
             : 'User created successfully!'
         );
+        console.log('Invalidating users query...');
         queryClient.invalidateQueries('users');
         handleCloseDialog();
       },
       onError: error => {
-        toast.error(error.response?.data?.detail || 'Operation failed');
+        console.error('User mutation error:', error);
+        console.error('Error response data:', error.response?.data);
+
+        const errorMessage = parseApiError(error);
+        toast.error(errorMessage);
       },
     }
   );
@@ -84,7 +98,8 @@ const UserManagement = () => {
         queryClient.invalidateQueries('users');
       },
       onError: error => {
-        toast.error(error.response?.data?.detail || 'Delete failed');
+        const errorMessage = parseApiError(error);
+        toast.error(errorMessage);
       },
     }
   );
@@ -251,53 +266,101 @@ const UserManagement = () => {
               <TableCell>User</TableCell>
               <TableCell>Email</TableCell>
               <TableCell>Role</TableCell>
+              <TableCell>Created</TableCell>
+              <TableCell>Updated</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {users?.map(user => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  <Box display='flex' alignItems='center'>
-                    <People sx={{ mr: 1, color: 'primary.main' }} />
-                    <Typography variant='body1' sx={{ fontWeight: 'medium' }}>
-                      {user.username}
-                    </Typography>
-                  </Box>
-                </TableCell>
-                <TableCell>{user.email || 'N/A'}</TableCell>
-                <TableCell>
-                  <Chip
-                    icon={getRoleIcon(user.role)}
-                    label={user.role}
-                    color={getRoleColor(user.role)}
-                    size='small'
-                  />
-                </TableCell>
-                <TableCell>
-                  <Chip label='Active' color='success' size='small' />
-                </TableCell>
-                <TableCell>
-                  <Box display='flex' gap={1}>
-                    <IconButton
-                      size='small'
-                      color='primary'
-                      onClick={() => handleOpenDialog(user)}
-                    >
-                      <Edit />
-                    </IconButton>
-                    <IconButton
-                      size='small'
-                      color='error'
-                      onClick={() => handleDelete(user.id)}
-                    >
-                      <Delete />
-                    </IconButton>
-                  </Box>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} align='center'>
+                  <CircularProgress />
                 </TableCell>
               </TableRow>
-            ))}
+            ) : usersError ? (
+              <TableRow>
+                <TableCell colSpan={7} align='center'>
+                  <Typography color='error'>
+                    Error loading users: {usersError.message}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : !users || users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align='center'>
+                  <Typography color='text.secondary'>No users found</Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              users
+                .filter(
+                  user =>
+                    user && typeof user === 'object' && user.id && user.username
+                )
+                .map(user => {
+                  return (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <Box display='flex' alignItems='center'>
+                          <People sx={{ mr: 1, color: 'primary.main' }} />
+                          <Typography
+                            variant='body1'
+                            sx={{ fontWeight: 'medium' }}
+                          >
+                            {user.username || 'N/A'}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>{user.email || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={getRoleIcon(user.role)}
+                          label={user.role || 'N/A'}
+                          color={getRoleColor(user.role)}
+                          size='small'
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2' color='text.secondary'>
+                          {user.created_at
+                            ? new Date(user.created_at).toLocaleDateString()
+                            : 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2' color='text.secondary'>
+                          {user.updated_at
+                            ? new Date(user.updated_at).toLocaleDateString()
+                            : 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip label='Active' color='success' size='small' />
+                      </TableCell>
+                      <TableCell>
+                        <Box display='flex' gap={1}>
+                          <IconButton
+                            size='small'
+                            color='primary'
+                            onClick={() => handleOpenDialog(user)}
+                          >
+                            <Edit />
+                          </IconButton>
+                          <IconButton
+                            size='small'
+                            color='error'
+                            onClick={() => handleDelete(user.id)}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+            )}
           </TableBody>
         </Table>
       </TableContainer>

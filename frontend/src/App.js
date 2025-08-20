@@ -11,6 +11,7 @@ import PDFManagement from './pages/PDFManagement';
 import AgentManagement from './pages/AgentManagement';
 import VectorStoreManagement from './pages/VectorStoreManagement';
 import SystemHealth from './pages/SystemHealth';
+import QALogs from './pages/QALogs';
 import { getUserInfo } from './store/slices/authSlice';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -87,6 +88,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AgentManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/qa-logs'
+        element={
+          <ProtectedRoute>
+            <QALogs />
           </ProtectedRoute>
         }
       />

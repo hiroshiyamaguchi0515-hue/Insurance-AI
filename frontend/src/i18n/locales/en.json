@@ -46,6 +46,7 @@
     "users": "Users",
     "documents": "Documents",
     "agents": "Agents",
+    "qaLogs": "QA Logs",
     "vectorStore": "Vector Store",
     "systemHealth": "System Health",
     "logout": "Logout",

@@ -46,6 +46,7 @@
     "users": "ユーザー",
     "documents": "ドキュメント",
     "agents": "エージェント",
+    "qaLogs": "QAログ",
     "vectorStore": "ベクターストア",
     "systemHealth": "システムヘルス",
     "logout": "ログアウト",

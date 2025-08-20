@@ -34,6 +34,7 @@ import { useDropzone } from 'react-dropzone';
 import { api, endpoints } from '../services/api';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { parseApiError } from '../utils/errorHandler';
 
 const PDFManagement = () => {
   const { user } = useSelector(state => state.auth);
@@ -93,7 +94,8 @@ const PDFManagement = () => {
         setUploadProgress(0);
       },
       onError: error => {
-        toast.error(error.response?.data?.detail || 'Upload failed');
+        const errorMessage = parseApiError(error);
+        toast.error(errorMessage);
         setUploadProgress(0);
       },
     }
@@ -110,7 +112,8 @@ const PDFManagement = () => {
         setPdfToDelete(null);
       },
       onError: error => {
-        toast.error(error.response?.data?.detail || 'Delete failed');
+        const errorMessage = parseApiError(error);
+        toast.error(errorMessage);
       },
     }
   );

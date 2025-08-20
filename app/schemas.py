@@ -23,13 +23,20 @@ class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, description="Username must be 3-50 characters")
 
 class UserCreate(UserBase):
+    email: str = Field(..., description="User's email address")
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
-    role: str = Field(..., pattern="^(admin|normal)$", description="Role must be 'admin' or 'normal'")
+    role: str = Field(..., pattern="^(admin|user)$", description="Role must be 'admin' or 'user'")
     
     @validator('username')
     def validate_username(cls, v):
         if not re.match("^[a-zA-Z0-9_-]+$", v):
             raise ValueError("Username can only contain letters, numbers, underscores, and hyphens")
+        return v
+    
+    @validator('email')
+    def validate_email(cls, v):
+        if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", v):
+            raise ValueError("Invalid email format")
         return v
     
     @validator('password')
@@ -42,13 +49,20 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     username: Optional[str] = Field(None, min_length=3, max_length=50)
+    email: Optional[str] = Field(None, description="User's email address")
     password: Optional[str] = Field(None, min_length=8)
-    role: Optional[str] = Field(None, pattern="^(admin|normal)$")
+    role: Optional[str] = Field(None, pattern="^(admin|user)$")
     
     @validator('username')
     def validate_username(cls, v):
         if v and not re.match("^[a-zA-Z0-9_-]+$", v):
             raise ValueError("Username can only contain letters, numbers, underscores, and hyphens")
+        return v
+    
+    @validator('email')
+    def validate_email(cls, v):
+        if v and not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", v):
+            raise ValueError("Invalid email format")
         return v
     
     @validator('password')
@@ -62,7 +76,10 @@ class UserUpdate(BaseModel):
 
 class UserResponse(UserBase):
     id: int
+    email: str
     role: str
+    created_at: datetime
+    updated_at: datetime
     class Config:
         from_attributes = True
 
@@ -119,12 +136,27 @@ class AgentLogResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class QALogResponse(BaseModel):
+    id: int
+    user_id: int
+    company_id: int
+    question: str
+    answer: str
+    timestamp: datetime
+    class Config:
+        from_attributes = True
+
 class CompanyResponse(BaseModel):
     id: int
     name: str
     model_name: str
     temperature: float
     max_tokens: int
+    created_at: datetime
+    updated_at: datetime
+    pdf_count: Optional[int] = 0
+    qa_logs_count: Optional[int] = 0
+    agent_logs_count: Optional[int] = 0
 
     class Config:
         from_attributes = True

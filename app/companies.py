@@ -198,9 +198,41 @@ async def update_company(company_id: int, update: CompanyUpdate, db: Session):
         )
 
 async def get_all_companies(db: Session) -> List[Company]:
-    """Get all companies"""
+    """Get all companies with document counts and other relevant information"""
     try:
-        return db.query(Company).all()
+        # Use a more complex query to get companies with additional information
+        companies = db.query(Company).all()
+        
+        # For each company, add additional information
+        for company in companies:
+            try:
+                # Get PDF count
+                pdf_count = db.query(PDFFile).filter(PDFFile.company_id == company.id).count()
+                
+                # Get recent activity counts
+                recent_qa_logs = db.query(QALog).filter(
+                    QALog.company_id == company.id
+                ).count()
+                
+                recent_agent_logs = db.query(AgentLog).filter(
+                    AgentLog.company_id == company.id
+                ).count()
+                
+                # Ensure all counts are integers and add as attributes
+                company.pdf_count = int(pdf_count) if pdf_count is not None else 0
+                company.qa_logs_count = int(recent_qa_logs) if recent_qa_logs is not None else 0
+                company.agent_logs_count = int(recent_agent_logs) if recent_agent_logs is not None else 0
+                
+                logger.debug(f"Company {company.name}: PDFs={company.pdf_count}, QA={company.qa_logs_count}, Agent={company.agent_logs_count}")
+                
+            except Exception as e:
+                logger.warning(f"Error getting counts for company {company.id}: {e}")
+                # Set default values if there's an error
+                company.pdf_count = 0
+                company.qa_logs_count = 0
+                company.agent_logs_count = 0
+            
+        return companies
     except SQLAlchemyError as e:
         logger.error(f"Database error listing companies: {e}")
         raise HTTPException(

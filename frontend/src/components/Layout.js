@@ -29,6 +29,7 @@ import {
   HealthAndSafety,
   AccountCircle,
   Logout,
+  QuestionAnswer,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -99,6 +100,12 @@ const Layout = ({ children }) => {
       icon: <SmartToy />,
       path: '/agents',
       roles: ['admin'],
+    },
+    {
+      text: t('navigation.qaLogs'),
+      icon: <QuestionAnswer />,
+      path: '/qa-logs',
+      roles: ['admin', 'user'],
     },
     {
       text: t('navigation.vectorStore'),

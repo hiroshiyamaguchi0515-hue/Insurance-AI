@@ -16,11 +16,12 @@ from .schemas import (
     UserCreate, UserResponse, UserUpdate,
     CompanyCreate, CompanyUpdate, CompanyResponse,
     LoginRequest, Token, AskRequest, AskResponse, AgentAskResponse,
-    PDFUploadResponse, AgentLogResponse
+    PDFUploadResponse, AgentLogResponse, QALogResponse
 )
 from .auth import (
     get_current_user, admin_required, create_tokens, 
-    verify_password, get_password_hash, embeddings
+    verify_password, get_password_hash, embeddings,
+    SECRET_KEY, ALGORITHM
 )
 from .companies import (
     create_company, update_company, get_all_companies, 
@@ -45,6 +46,7 @@ app = FastAPI(
         {"name": "PDF", "description": "PDF file management and operations"},
         {"name": "VectorStore", "description": "Vector store management and operations"},
         {"name": "Agent", "description": "AI agent management and interactions"},
+        {"name": "QA", "description": "Question and answer log management"},
         {"name": "Admin", "description": "Administrative operations and system management"}
     ]
 )
@@ -91,9 +93,19 @@ async def login(credentials: LoginRequest, db: Session = Depends(get_db)):
         )
 
 @app.post("/auth/refresh", response_model=Token, tags=["Auth"])
-async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
+async def refresh_token(request: Request, db: Session = Depends(get_db)):
     """Refresh access token using refresh token"""
     try:
+        # Get refresh token from request body
+        body = await request.json()
+        refresh_token = body.get("refresh_token")
+        
+        if not refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Refresh token is required"
+            )
+        
         # Verify refresh token
         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
@@ -136,15 +148,24 @@ async def get_current_user_info(current_user=Depends(get_current_user)):
     """Get current user information"""
     return current_user
 
-@app.post("/users", response_model=UserResponse, dependencies=[Depends(admin_required)], tags=["Auth"])
+@app.post("/admin/users", response_model=UserResponse, dependencies=[Depends(admin_required)], tags=["Auth"])
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     """Create a new user (admin only)"""
     try:
-        existing = db.query(User).filter(User.username == user.username).first()
-        if existing:
+        # Check for existing username
+        existing_username = db.query(User).filter(User.username == user.username).first()
+        if existing_username:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Username already exists"
+            )
+        
+        # Check for existing email
+        existing_email = db.query(User).filter(User.email == user.email).first()
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already exists"
             )
         
         password_hash = get_password_hash(user.password)
@@ -185,7 +206,7 @@ async def list_users(db: Session = Depends(get_db)):
 # COMPANY MANAGEMENT ENDPOINTS
 # ============================================================================
 
-@app.post("/companies", dependencies=[Depends(admin_required)], tags=["Company"])
+@app.post("/admin/companies", dependencies=[Depends(admin_required)], tags=["Company"])
 async def create_company_endpoint(company: CompanyCreate, db: Session = Depends(get_db)):
     """Create a new company with required model configuration"""
     return await create_company(company, db)
@@ -193,6 +214,11 @@ async def create_company_endpoint(company: CompanyCreate, db: Session = Depends(
 @app.get("/admin/companies", response_model=List[CompanyResponse], dependencies=[Depends(admin_required)], tags=["Company"])
 async def list_companies(db: Session = Depends(get_db)):
     """List all companies (admin only)"""
+    return await get_all_companies(db)
+
+@app.get("/companies", response_model=List[CompanyResponse], tags=["Company"])
+async def get_companies(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """Get all companies (accessible to all authenticated users)"""
     return await get_all_companies(db)
 
 @app.patch("/companies/{company_id}", dependencies=[Depends(admin_required)], tags=["Company"])
@@ -824,6 +850,109 @@ async def clear_agent_logs(company_id: int, db: Session = Depends(get_db)):
         )
     except Exception as e:
         logger.error(f"Unexpected error clearing agent logs: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unexpected error occurred"
+        )
+
+# ============================================================================
+# QA LOG ENDPOINTS
+# ============================================================================
+
+@app.get("/companies/{company_id}/qa/logs", response_model=List[QALogResponse], tags=["QA"])
+async def list_qa_logs(
+    company_id: int, 
+    user: int = Query(None), 
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db), 
+    current_user=Depends(get_current_user)
+):
+    """List QA logs for a company with pagination"""
+    try:
+        # Get company
+        company = db.query(Company).filter(Company.id == company_id).first()
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company not found"
+            )
+        
+        # Build query
+        query = db.query(QALog).filter(QALog.company_id == company_id)
+        
+        # Apply filters
+        if user:
+            query = query.filter(QALog.user_id == user)
+        
+        # Apply pagination
+        total_count = query.count()
+        logs = query.offset(offset).limit(limit).all()
+        
+        return logs
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing QA logs: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to list QA logs"
+        )
+
+@app.get("/companies/{company_id}/qa/logs/{log_id}", response_model=QALogResponse, tags=["QA"])
+async def get_qa_log(company_id: int, log_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """Get a specific QA log"""
+    try:
+        log = db.query(QALog).filter(
+            QALog.id == log_id,
+            QALog.company_id == company_id
+        ).first()
+        
+        if not log:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="QA log not found"
+            )
+        
+        return log
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving QA log: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve QA log"
+        )
+
+@app.delete("/companies/{company_id}/qa/logs", dependencies=[Depends(admin_required)], tags=["QA"])
+async def clear_qa_logs(company_id: int, db: Session = Depends(get_db)):
+    """Clear all QA logs for a company"""
+    try:
+        company = db.query(Company).filter(Company.id == company_id).first()
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company not found"
+            )
+        
+        deleted_count = db.query(QALog).filter(QALog.company_id == company_id).delete()
+        db.commit()
+        logger.info(f"Cleared {deleted_count} QA logs for company_id: {company_id}")
+        return {"message": f"Cleared {deleted_count} QA logs"}
+        
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Database error clearing QA logs: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error occurred"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error clearing QA logs: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unexpected error occurred"
