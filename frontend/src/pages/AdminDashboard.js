@@ -101,7 +101,7 @@ const SystemStatusCard = ({ title, status, details, icon, color }) => (
         <Chip
           label={status}
           color={
-            status === 'healthy'
+            status === 'healthy' || status === 'configured'
               ? 'success'
               : status === 'warning'
                 ? 'warning'
@@ -140,6 +140,36 @@ const AdminDashboard = () => {
     { refetchInterval: 10000 }
   );
 
+  // Debug logging to help identify data structure issues
+  React.useEffect(() => {
+    if (systemHealth) {
+      console.log('AdminDashboard - System Health Data:', systemHealth);
+      console.log('AdminDashboard - Services:', systemHealth.services);
+      console.log(
+        'AdminDashboard - Database Service:',
+        systemHealth.services?.database
+      );
+    }
+  }, [systemHealth]);
+
+  // Helper function to safely extract status from service objects
+  const getServiceStatus = service => {
+    if (!service) return 'unknown';
+    if (typeof service === 'string') return service;
+    if (typeof service === 'object' && service.status) return service.status;
+    return 'unknown';
+  };
+
+  // Helper function to safely extract numeric values
+  const getSafeNumber = value => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = parseInt(value, 10);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+  };
+
   const stats = [
     {
       title: 'Total Companies',
@@ -159,7 +189,7 @@ const AdminDashboard = () => {
       title: 'PDF Documents',
       value:
         companies?.reduce(
-          (acc, company) => acc + (company.pdf_count || 0),
+          (acc, company) => acc + getSafeNumber(company.pdf_count),
           0
         ) || 0,
       icon: <Description sx={{ color: 'info.main', fontSize: 32 }} />,
@@ -168,7 +198,7 @@ const AdminDashboard = () => {
     },
     {
       title: 'AI Agents',
-      value: agentsStatus?.stats?.total_agents || 0,
+      value: getSafeNumber(agentsStatus?.stats?.total_agents),
       icon: <SmartToy sx={{ color: 'secondary.main', fontSize: 32 }} />,
       color: 'secondary',
       trend: 5,
@@ -178,21 +208,21 @@ const AdminDashboard = () => {
   const systemStatuses = [
     {
       title: 'Database',
-      status: systemHealth?.services?.database || 'unknown',
+      status: getServiceStatus(systemHealth?.services?.database),
       details: 'SQLite database connection',
       icon: <Storage sx={{ color: 'primary.main' }} />,
       color: 'primary',
     },
     {
       title: 'AI Embeddings',
-      status: systemHealth?.services?.embeddings || 'unknown',
+      status: getServiceStatus(systemHealth?.services?.embeddings),
       details: 'OpenAI embeddings service',
       icon: <SmartToy sx={{ color: 'secondary.main' }} />,
       color: 'secondary',
     },
     {
       title: 'OpenAI API',
-      status: systemHealth?.services?.openai_api || 'unknown',
+      status: getServiceStatus(systemHealth?.services?.openai_api),
       details: 'OpenAI API connectivity',
       icon: <HealthAndSafety sx={{ color: 'success.main' }} />,
       color: 'success',

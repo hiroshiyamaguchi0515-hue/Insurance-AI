@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -14,74 +14,61 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
-  Grid,
-  CircularProgress,
-  Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
-import { Delete, QuestionAnswer, Person, Refresh } from '@mui/icons-material';
+import { Delete, QuestionAnswer, Person } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { useSelector } from 'react-redux';
-import { api } from '../services/api';
-import toast from 'react-hot-toast';
-import { parseApiError } from '../utils/errorHandler';
+import { api, endpoints } from '../services/api';
+import { formatDate } from '../utils/dateUtils';
 
 const QALogs = () => {
-  const user = useSelector(state => state.auth.user);
   const [selectedCompany, setSelectedCompany] = useState('');
-  const [selectedUser, setSelectedUser] = useState('');
-  const [limit, setLimit] = useState(50);
-  const [offset, setOffset] = useState(0);
-  const [logDetails, setLogDetails] = useState(null);
+  const [companies, setCompanies] = useState([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
-
+  const [logDetails, setLogDetails] = useState(null);
   const queryClient = useQueryClient();
 
-  // Fetch companies for filter
-  const { data: companies } = useQuery('companies', () =>
-    api.get('/companies').then(res => res.data)
-  );
+  // Fetch companies for dropdown
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const response = await api.get(endpoints.companies);
+        setCompanies(response.data);
+      } catch (error) {
+        console.error('Failed to fetch companies:', error);
+      }
+    };
+    fetchCompanies();
+  }, []);
 
-  // Fetch users for filter (admin only)
-  const { data: users } = useQuery(
+  // Fetch users for display
+  const { data: users = [] } = useQuery(
     'users',
-    () => api.get('/admin/users').then(res => res.data),
-    { enabled: user?.role === 'admin' }
-  );
-
-  // Fetch QA logs
-  const {
-    data: qaLogs,
-    isLoading,
-    error,
-  } = useQuery(
-    ['qa-logs', selectedCompany, selectedUser, limit, offset],
-    () => {
-      if (!selectedCompany) return Promise.resolve([]);
-
-      const params = new URLSearchParams();
-      if (selectedUser) params.append('user', selectedUser);
-      params.append('limit', limit);
-      params.append('offset', offset);
-
-      return api
-        .get(`/companies/${selectedCompany}/qa/logs?${params}`)
-        .then(res => res.data);
-    },
+    () => api.get(endpoints.adminUsers).then(res => res.data),
     { enabled: !!selectedCompany }
   );
 
-  // Clear logs mutation
+  // Fetch QA logs for selected company
+  const {
+    data: qaLogs = [],
+    isLoading,
+    refetch,
+  } = useQuery(
+    ['qaLogs', selectedCompany],
+    () =>
+      api.get(endpoints.companyQALogs(selectedCompany)).then(res => res.data),
+    { enabled: !!selectedCompany }
+  );
+
+  // Clear QA logs mutation
   const clearLogsMutation = useMutation(
-    () => api.delete(`/companies/${selectedCompany}/qa/logs`),
+    () => api.delete(endpoints.companyQALogs(selectedCompany)),
     {
       onSuccess: () => {
-        toast.success('QA logs cleared successfully!');
-        queryClient.invalidateQueries(['qa-logs', selectedCompany]);
-      },
-      onError: error => {
-        const errorMessage = parseApiError(error);
-        toast.error(errorMessage);
+        queryClient.invalidateQueries(['qaLogs', selectedCompany]);
       },
     }
   );
@@ -101,30 +88,15 @@ const QALogs = () => {
     setDetailsOpen(true);
   };
 
-  const formatDate = dateString => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString();
-  };
-
   const getUserName = userId => {
-    if (!users) return `User ${userId}`;
     const user = users.find(u => u.id === userId);
     return user ? user.username : `User ${userId}`;
   };
 
   const getCompanyName = companyId => {
-    if (!companies) return `Company ${companyId}`;
     const company = companies.find(c => c.id === companyId);
     return company ? company.name : `Company ${companyId}`;
   };
-
-  if (!user) {
-    return (
-      <Box p={3}>
-        <Alert severity='error'>You must be logged in to view this page.</Alert>
-      </Box>
-    );
-  }
 
   return (
     <Box p={3}>
@@ -140,81 +112,33 @@ const QALogs = () => {
         <Typography variant='h6' mb={2}>
           Filters
         </Typography>
-        <Grid container spacing={2} alignItems='center'>
-          <Grid item xs={12} sm={6} md={3}>
-            <TextField
-              select
-              fullWidth
-              label='Company'
-              value={selectedCompany}
-              onChange={e => setSelectedCompany(e.target.value)}
-              required
-            >
-              <option value=''>Select Company</option>
-              {companies?.map(company => (
-                <option key={company.id} value={company.id}>
+        <FormControl fullWidth>
+          <InputLabel id='company-select-label'>Company</InputLabel>
+          <Select
+            labelId='company-select-label'
+            value={selectedCompany}
+            label='Company'
+            onChange={e => setSelectedCompany(e.target.value)}
+            disabled={!companies.length}
+          >
+            <MenuItem value=''>
+              {companies.length === 0 ? 'Loading...' : 'Select Company'}
+            </MenuItem>
+            {companies.length > 0 ? (
+              companies.map(company => (
+                <MenuItem key={company.id} value={company.id}>
                   {company.name}
-                </option>
-              ))}
-            </TextField>
-          </Grid>
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem value='' disabled>
+                No companies available
+              </MenuItem>
+            )}
+          </Select>
+        </FormControl>
 
-          {user?.role === 'admin' && (
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                select
-                fullWidth
-                label='User'
-                value={selectedUser}
-                onChange={e => setSelectedUser(e.target.value)}
-              >
-                <option value=''>All Users</option>
-                {users?.map(u => (
-                  <option key={u.id} value={u.id}>
-                    {u.username}
-                  </option>
-                ))}
-              </TextField>
-            </Grid>
-          )}
-
-          <Grid item xs={12} sm={6} md={2}>
-            <TextField
-              fullWidth
-              label='Limit'
-              type='number'
-              value={limit}
-              onChange={e => setLimit(parseInt(e.target.value) || 50)}
-              inputProps={{ min: 1, max: 100 }}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={2}>
-            <TextField
-              fullWidth
-              label='Offset'
-              type='number'
-              value={offset}
-              onChange={e => setOffset(parseInt(e.target.value) || 0)}
-              inputProps={{ min: 0 }}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={2}>
-            <Button
-              variant='outlined'
-              startIcon={<Refresh />}
-              onClick={() =>
-                queryClient.invalidateQueries(['qa-logs', selectedCompany])
-              }
-              disabled={!selectedCompany}
-            >
-              Refresh
-            </Button>
-          </Grid>
-        </Grid>
-
-        {user?.role === 'admin' && selectedCompany && (
+        {selectedCompany && (
           <Box mt={2}>
             <Button
               variant='outlined'
@@ -225,6 +149,25 @@ const QALogs = () => {
             >
               {clearLogsMutation.isLoading ? 'Clearing...' : 'Clear All Logs'}
             </Button>
+          </Box>
+        )}
+
+        {/* Debug Information */}
+        {process.env.NODE_ENV === 'development' && (
+          <Box mt={2} p={2} bgcolor='grey.100' borderRadius={1}>
+            <Typography variant='subtitle2' color='text.secondary' gutterBottom>
+              Debug Info:
+            </Typography>
+            <Typography variant='body2' color='text.secondary'>
+              Companies loaded: {companies.length || 0} | Selected company:{' '}
+              {selectedCompany || 'None'}
+            </Typography>
+            {companies.length > 0 && (
+              <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
+                Available companies:{' '}
+                {companies.map(c => `${c.name} (ID: ${c.id})`).join(', ')}
+              </Typography>
+            )}
           </Box>
         )}
       </Paper>
@@ -247,16 +190,7 @@ const QALogs = () => {
                 {isLoading ? (
                   <TableRow>
                     <TableCell colSpan={5} align='center'>
-                      <CircularProgress />
-                    </TableCell>
-                  </TableRow>
-                ) : error ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align='center'>
-                      <Alert severity='error'>
-                        {error.response?.data?.detail ||
-                          'Failed to load QA logs'}
-                      </Alert>
+                      Loading...
                     </TableCell>
                   </TableRow>
                 ) : qaLogs?.length === 0 ? (
@@ -343,52 +277,42 @@ const QALogs = () => {
         <DialogTitle>QA Log Details</DialogTitle>
         <DialogContent>
           {logDetails && (
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Typography variant='subtitle2' color='text.secondary'>
-                  Company
-                </Typography>
-                <Typography variant='body1' sx={{ mb: 2 }}>
-                  {getCompanyName(logDetails.company_id)}
-                </Typography>
-              </Grid>
+            <Box>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Company
+              </Typography>
+              <Typography variant='body1' sx={{ mb: 2 }}>
+                {getCompanyName(logDetails.company_id)}
+              </Typography>
 
-              <Grid item xs={12}>
-                <Typography variant='subtitle2' color='text.secondary'>
-                  User
-                </Typography>
-                <Typography variant='body1' sx={{ mb: 2 }}>
-                  {getUserName(logDetails.user_id)}
-                </Typography>
-              </Grid>
+              <Typography variant='subtitle2' color='text.secondary'>
+                User
+              </Typography>
+              <Typography variant='body1' sx={{ mb: 2 }}>
+                {getUserName(logDetails.user_id)}
+              </Typography>
 
-              <Grid item xs={12}>
-                <Typography variant='subtitle2' color='text.secondary'>
-                  Question
-                </Typography>
-                <Typography variant='body1' sx={{ mb: 2 }}>
-                  {logDetails.question}
-                </Typography>
-              </Grid>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Question
+              </Typography>
+              <Typography variant='body1' sx={{ mb: 2 }}>
+                {logDetails.question}
+              </Typography>
 
-              <Grid item xs={12}>
-                <Typography variant='subtitle2' color='text.secondary'>
-                  Answer
-                </Typography>
-                <Typography variant='body1' sx={{ mb: 2 }}>
-                  {logDetails.answer}
-                </Typography>
-              </Grid>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Answer
+              </Typography>
+              <Typography variant='body1' sx={{ mb: 2 }}>
+                {logDetails.answer}
+              </Typography>
 
-              <Grid item xs={12}>
-                <Typography variant='subtitle2' color='text.secondary'>
-                  Timestamp
-                </Typography>
-                <Typography variant='body1'>
-                  {formatDate(logDetails.timestamp)}
-                </Typography>
-              </Grid>
-            </Grid>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Timestamp
+              </Typography>
+              <Typography variant='body1'>
+                {formatDate(logDetails.timestamp)}
+              </Typography>
+            </Box>
           )}
         </DialogContent>
         <DialogActions>

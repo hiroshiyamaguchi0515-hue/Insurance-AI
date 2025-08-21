@@ -138,13 +138,62 @@ class AgentLogResponse(BaseModel):
 
 class QALogResponse(BaseModel):
     id: int
-    user_id: int
-    company_id: int
     question: str
     answer: str
     timestamp: datetime
+    company_name: str
+    
     class Config:
         from_attributes = True
+
+# Chat schemas
+class ChatMessageBase(BaseModel):
+    message_type: str = Field(..., description="Type of message: 'user', 'assistant', or 'error'")
+    content: str = Field(..., description="Message content")
+
+class ChatMessageCreate(ChatMessageBase):
+    pass
+
+class ChatMessageResponse(ChatMessageBase):
+    id: int
+    timestamp: datetime
+    conversation_id: int
+    
+    class Config:
+        from_attributes = True
+
+class ChatConversationBase(BaseModel):
+    company_id: int = Field(..., description="Company ID for the conversation")
+    chat_type: str = Field(..., description="Type of chat: 'simple' or 'agent'")
+    title: str = Field(..., description="Conversation title")
+
+class ChatConversationCreate(ChatConversationBase):
+    pass
+
+class ChatConversationResponse(ChatConversationBase):
+    id: int
+    user_id: int
+    company_name: str
+    created_at: datetime
+    updated_at: datetime
+    message_count: int = 0
+    last_message: Optional[str] = None
+    last_message_time: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+class ChatConversationDetail(ChatConversationResponse):
+    messages: List[ChatMessageResponse] = []
+    
+    class Config:
+        from_attributes = True
+
+class ChatRequest(BaseModel):
+    question: str = Field(..., description="User's question")
+    conversation_id: Optional[int] = Field(None, description="Existing conversation ID (optional)")
+    company_id: int = Field(..., description="Company ID for the conversation")
+    chat_type: str = Field(..., description="Type of chat: 'simple' or 'agent'")
 
 class CompanyResponse(BaseModel):
     id: int

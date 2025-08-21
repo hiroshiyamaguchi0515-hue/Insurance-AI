@@ -1,17 +1,15 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { api } from '../../services/api';
+import { api, endpoints } from '../../services/api';
 
 // Async thunks
 export const fetchCompanies = createAsyncThunk(
   'company/fetchCompanies',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/companies');
+      const response = await api.get(endpoints.companies);
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to fetch companies'
-      );
+      return rejectWithValue('Failed to fetch companies');
     }
   }
 );
@@ -20,12 +18,10 @@ export const fetchAdminCompanies = createAsyncThunk(
   'company/fetchAdminCompanies',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/admin/companies');
+      const response = await api.get(endpoints.adminCompanies);
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to fetch admin companies'
-      );
+      return rejectWithValue('Failed to fetch admin companies');
     }
   }
 );
@@ -34,12 +30,10 @@ export const createCompany = createAsyncThunk(
   'company/createCompany',
   async (companyData, { rejectWithValue }) => {
     try {
-      const response = await api.post('/companies', companyData);
+      const response = await api.post(endpoints.companies, companyData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to create company'
-      );
+      return rejectWithValue('Failed to create company');
     }
   }
 );
@@ -48,12 +42,10 @@ export const updateCompany = createAsyncThunk(
   'company/updateCompany',
   async ({ id, companyData }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/companies/${id}`, companyData);
+      const response = await api.patch(endpoints.company(id), companyData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to update company'
-      );
+      return rejectWithValue('Failed to update company');
     }
   }
 );
@@ -62,12 +54,10 @@ export const deleteCompany = createAsyncThunk(
   'company/deleteCompany',
   async (companyId, { rejectWithValue }) => {
     try {
-      await api.delete(`/admin/companies/${companyId}`);
+      await api.delete(endpoints.adminCompany(companyId));
       return companyId;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to delete company'
-      );
+      return rejectWithValue('Failed to delete company');
     }
   }
 );
@@ -76,12 +66,10 @@ export const fetchOpenAIModels = createAsyncThunk(
   'company/fetchOpenAIModels',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/admin/openai/models');
+      const response = await api.get(endpoints.openaiModels);
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to fetch OpenAI models'
-      );
+      return rejectWithValue('Failed to fetch OpenAI models');
     }
   }
 );

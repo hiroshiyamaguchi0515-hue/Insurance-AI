@@ -1,27 +1,28 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { api } from '../../services/api';
+import { api, endpoints } from '../../services/api';
 
 // Async thunks
 export const fetchCompanyPDFs = createAsyncThunk(
   'pdf/fetchCompanyPDFs',
   async (companyId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/companies/${companyId}/pdfs`);
+      const response = await api.get(endpoints.companyPDFs(companyId));
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to fetch PDFs'
-      );
+      return rejectWithValue('Failed to fetch PDFs');
     }
   }
 );
 
 export const uploadPDF = createAsyncThunk(
   'pdf/uploadPDF',
-  async ({ companyId, formData }, { rejectWithValue }) => {
+  async ({ companyId, file }, { rejectWithValue }) => {
     try {
+      const formData = new FormData();
+      formData.append('file', file);
+
       const response = await api.post(
-        `/companies/${companyId}/pdfs`,
+        endpoints.uploadPDF(companyId),
         formData,
         {
           headers: {
@@ -31,23 +32,19 @@ export const uploadPDF = createAsyncThunk(
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to upload PDF'
-      );
+      return rejectWithValue('Failed to upload PDF');
     }
   }
 );
 
-export const deletePDF = createAsyncThunk(
-  'pdf/deletePDF',
+export const removePDF = createAsyncThunk(
+  'pdf/removePDF',
   async ({ companyId, filename }, { rejectWithValue }) => {
     try {
-      await api.delete(`/companies/${companyId}/pdfs/${filename}`);
-      return { companyId, filename };
+      await api.delete(endpoints.removePDF(companyId, filename));
+      return filename;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to delete PDF'
-      );
+      return rejectWithValue('Failed to remove PDF');
     }
   }
 );
@@ -114,20 +111,17 @@ const pdfSlice = createSlice({
         state.uploadProgress = 0;
       })
       // Delete PDF
-      .addCase(deletePDF.pending, state => {
+      .addCase(removePDF.pending, state => {
         state.deleteLoading = true;
         state.error = null;
       })
-      .addCase(deletePDF.fulfilled, (state, action) => {
+      .addCase(removePDF.fulfilled, state => {
         state.deleteLoading = false;
-        const { companyId, filename } = action.payload;
-        if (state.pdfs[companyId] && state.pdfs[companyId].pdf_files) {
-          state.pdfs[companyId].pdf_files = state.pdfs[
-            companyId
-          ].pdf_files.filter(pdf => pdf.filename !== filename);
+        if (state.error && state.error.includes('Failed to remove PDF')) {
+          state.error = null;
         }
       })
-      .addCase(deletePDF.rejected, (state, action) => {
+      .addCase(removePDF.rejected, (state, action) => {
         state.deleteLoading = false;
         state.error = action.payload;
       });

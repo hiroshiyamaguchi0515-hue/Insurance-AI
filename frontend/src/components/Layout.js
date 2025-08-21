@@ -30,6 +30,7 @@ import {
   AccountCircle,
   Logout,
   QuestionAnswer,
+  Chat,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -93,7 +94,7 @@ const Layout = ({ children }) => {
       text: t('navigation.documents'),
       icon: <Description />,
       path: '/documents',
-      roles: ['admin', 'user'],
+      roles: ['admin'],
     },
     {
       text: t('navigation.agents'),
@@ -105,6 +106,12 @@ const Layout = ({ children }) => {
       text: t('navigation.qaLogs'),
       icon: <QuestionAnswer />,
       path: '/qa-logs',
+      roles: ['admin', 'user'],
+    },
+    {
+      text: t('navigation.chat'),
+      icon: <Chat />,
+      path: '/chat',
       roles: ['admin', 'user'],
     },
     {

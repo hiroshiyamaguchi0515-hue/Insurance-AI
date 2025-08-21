@@ -72,9 +72,14 @@ export const endpoints = {
   // Users
   users: '/users',
   userMe: '/users/me',
+  adminUsers: '/admin/users',
+  adminUser: userId => `/admin/users/${userId}`,
 
   // Companies
+  companies: '/companies',
+  company: id => `/companies/${id}`,
   adminCompanies: '/admin/companies',
+  adminCompany: companyId => `/admin/companies/${companyId}`,
 
   // PDFs
   companyPDFs: companyId => `/companies/${companyId}/pdfs`,
@@ -85,6 +90,7 @@ export const endpoints = {
   // Q&A
   askQuestion: companyId => `/companies/${companyId}/ask`,
   askAgent: companyId => `/companies/${companyId}/agent/ask`,
+  companyQALogs: companyId => `/companies/${companyId}/qa/logs`,
 
   // Agents
   agentReset: companyId => `/companies/${companyId}/agent/reset`,
@@ -102,8 +108,13 @@ export const endpoints = {
   agentInfo: companyId => `/admin/agents/${companyId}/info`,
   forceRemoveAgent: companyId => `/admin/agents/${companyId}/force-remove`,
 
-  // Health
+  // System
   health: '/health',
+  systemStatus: '/admin/system/status',
+
+  // Chat
+  chatAsk: '/chat/ask',
+  chatConversation: conversationId => `/chat/conversations/${conversationId}`,
 };
 
 export default api;

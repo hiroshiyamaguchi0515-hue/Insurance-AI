@@ -1,9 +1,19 @@
 // React Router future flags to suppress v7 warnings
 // These must be set before React Router is imported
+// Setting these flags should suppress the v7 warnings about startTransition and relativeSplatPath
 window.__REACT_ROUTER_FUTURE__ = {
   v7_startTransition: true,
   v7_relativeSplatPath: true,
+  v7_normalizeFormMethod: true,
+  v7_prependBasename: true,
 };
+
+// Also try setting them as individual properties to ensure they are set
+window.__REACT_ROUTER_FUTURE__ = window.__REACT_ROUTER_FUTURE__ || {};
+window.__REACT_ROUTER_FUTURE__.v7_startTransition = true;
+window.__REACT_ROUTER_FUTURE__.v7_relativeSplatPath = true;
+window.__REACT_ROUTER_FUTURE__.v7_normalizeFormMethod = true;
+window.__REACT_ROUTER_FUTURE__.v7_prependBasename = true;
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -79,7 +89,14 @@ root.render(
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <BrowserRouter>
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+              v7_normalizeFormMethod: true,
+              v7_prependBasename: true,
+            }}
+          >
             <App />
             <Toaster
               position='top-right'

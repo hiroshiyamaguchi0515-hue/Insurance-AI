@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import Layout from './components/Layout';
@@ -12,6 +12,7 @@ import AgentManagement from './pages/AgentManagement';
 import VectorStoreManagement from './pages/VectorStoreManagement';
 import SystemHealth from './pages/SystemHealth';
 import QALogs from './pages/QALogs';
+import ChatComponent from './pages/ChatComponent';
 import { getUserInfo } from './store/slices/authSlice';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -32,13 +33,26 @@ const AppRoutes = () => {
   const { user, isAuthenticated, token } = useSelector(state => state.auth);
   const dispatch = useDispatch();
 
+  // Stabilize the getUserInfo dispatch to prevent unnecessary re-runs
+  const handleGetUserInfo = useCallback(() => {
+    dispatch(getUserInfo());
+  }, [dispatch]);
+
   // Initialize authentication on app startup
   useEffect(() => {
-    if (token && !user && !isAuthenticated) {
-      // We have a token but no user data, try to get user info
-      dispatch(getUserInfo());
+    console.log('🔍 App useEffect triggered:', {
+      token: !!token,
+      user: !!user,
+      isAuthenticated,
+      timestamp: Date.now(),
+    });
+    // If we have a token but no user data, try to get user info
+    if (token && !user) {
+      console.log('🚀 Fetching user info');
+      handleGetUserInfo();
     }
-  }, [token, user, isAuthenticated, dispatch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, user, handleGetUserInfo]); // Removed isAuthenticated from dependencies
 
   if (!isAuthenticated || !user) {
     return (
@@ -78,7 +92,7 @@ const AppRoutes = () => {
       <Route
         path='/documents'
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin']}>
             <PDFManagement />
           </ProtectedRoute>
         }
@@ -112,6 +126,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <SystemHealth />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/chat'
+        element={
+          <ProtectedRoute>
+            <ChatComponent />
           </ProtectedRoute>
         }
       />

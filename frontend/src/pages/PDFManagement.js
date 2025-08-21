@@ -35,6 +35,7 @@ import { api, endpoints } from '../services/api';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { parseApiError } from '../utils/errorHandler';
+import { formatDate } from '../utils/dateUtils';
 
 const PDFManagement = () => {
   const { user } = useSelector(state => state.auth);
@@ -163,16 +164,6 @@ const PDFManagement = () => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-  };
-
-  const formatDate = dateString => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   };
 
   return (

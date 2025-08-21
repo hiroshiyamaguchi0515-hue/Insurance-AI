@@ -1,16 +1,15 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { api } from '../../services/api';
+import { api, endpoints } from '../../services/api';
 
+// Async thunks
 export const fetchAgentsStatus = createAsyncThunk(
   'agent/fetchAgentsStatus',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/admin/agents/status');
+      const response = await api.get(endpoints.agentsStatus);
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to fetch agents status'
-      );
+      return rejectWithValue('Failed to fetch agents status');
     }
   }
 );
@@ -19,12 +18,10 @@ export const resetAgent = createAsyncThunk(
   'agent/resetAgent',
   async (companyId, { rejectWithValue }) => {
     try {
-      await api.post(`/companies/${companyId}/agent/reset`);
+      await api.post(endpoints.agentReset(companyId));
       return companyId;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to reset agent'
-      );
+      return rejectWithValue('Failed to reset agent');
     }
   }
 );
@@ -33,12 +30,10 @@ export const forceRemoveAgent = createAsyncThunk(
   'agent/forceRemoveAgent',
   async (companyId, { rejectWithValue }) => {
     try {
-      await api.delete(`/admin/agents/${companyId}/force-remove`);
+      await api.delete(endpoints.forceRemoveAgent(companyId));
       return companyId;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to remove agent'
-      );
+      return rejectWithValue('Failed to force remove agent');
     }
   }
 );

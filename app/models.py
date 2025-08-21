@@ -22,6 +22,7 @@ class User(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
     qa_logs = relationship("QALog", back_populates="user", cascade="all, delete-orphan")
     agent_logs = relationship("AgentLog", back_populates="user", cascade="all, delete-orphan")
+    chat_conversations = relationship("ChatConversation", back_populates="user", cascade="all, delete-orphan")
 
 class Company(Base):
     __tablename__ = "companies"
@@ -35,6 +36,7 @@ class Company(Base):
     pdfs = relationship("PDFFile", back_populates="company", cascade="all, delete-orphan")
     qa_logs = relationship("QALog", back_populates="company", cascade="all, delete-orphan")
     agent_logs = relationship("AgentLog", back_populates="company", cascade="all, delete-orphan")
+    chat_conversations = relationship("ChatConversation", back_populates="company", cascade="all, delete-orphan")
 
 class PDFFile(Base):
     __tablename__ = "pdf_files"
@@ -67,3 +69,29 @@ class AgentLog(Base):
     timestamp = Column(DateTime, default=utc_now, nullable=False, index=True)
     user = relationship("User", back_populates="agent_logs")
     company = relationship("Company", back_populates="agent_logs")
+
+class ChatConversation(Base):
+    __tablename__ = "chat_conversations"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(200), nullable=False)  # First question or auto-generated title
+    chat_type = Column(String(20), default="simple", nullable=False)  # 'simple' or 'agent'
+    created_at = Column(DateTime, default=utc_now, nullable=False, index=True)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False, index=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="chat_conversations")
+    company = relationship("Company", back_populates="chat_conversations")
+    messages = relationship("ChatMessage", back_populates="conversation", cascade="all, delete-orphan")
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id = Column(Integer, primary_key=True, index=True)
+    conversation_id = Column(Integer, ForeignKey("chat_conversations.id", ondelete="CASCADE"), nullable=False)
+    message_type = Column(String(20), nullable=False)  # 'user', 'assistant', 'error'
+    content = Column(Text, nullable=False)
+    timestamp = Column(DateTime, default=utc_now, nullable=False, index=True)
+    
+    # Relationships
+    conversation = relationship("ChatConversation", back_populates="messages")

@@ -47,6 +47,7 @@
     "documents": "Documents",
     "agents": "Agents",
     "qaLogs": "QA Logs",
+    "chat": "Chat",
     "vectorStore": "Vector Store",
     "systemHealth": "System Health",
     "logout": "Logout",

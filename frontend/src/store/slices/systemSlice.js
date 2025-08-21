@@ -1,16 +1,15 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { api } from '../../services/api';
+import { api, endpoints } from '../../services/api';
 
+// Async thunks
 export const fetchSystemHealth = createAsyncThunk(
   'system/fetchSystemHealth',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/health');
+      const response = await api.get(endpoints.health);
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to fetch system health'
-      );
+      return rejectWithValue('Failed to fetch system health');
     }
   }
 );
@@ -19,12 +18,10 @@ export const rebuildVectorStore = createAsyncThunk(
   'system/rebuildVectorStore',
   async (companyId, { rejectWithValue }) => {
     try {
-      await api.post(`/companies/${companyId}/rebuild-vector-store`);
+      await api.post(endpoints.rebuildVectorStore(companyId));
       return companyId;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || 'Failed to rebuild vector store'
-      );
+      return rejectWithValue('Failed to rebuild vector store');
     }
   }
 );

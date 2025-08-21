@@ -47,6 +47,7 @@
     "documents": "ドキュメント",
     "agents": "エージェント",
     "qaLogs": "QAログ",
+    "chat": "チャット",
     "vectorStore": "ベクターストア",
     "systemHealth": "システムヘルス",
     "logout": "ログアウト",

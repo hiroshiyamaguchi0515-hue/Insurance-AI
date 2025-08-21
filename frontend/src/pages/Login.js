@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -13,7 +13,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { LockOutlined, Business } from '@mui/icons-material';
-import { loginUser, clearError } from '../store/slices/authSlice';
+import { loginUser } from '../store/slices/authSlice';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -25,20 +25,36 @@ const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { t } = useTranslation();
-  const { loading, error, isAuthenticated } = useSelector(state => state.auth);
+  const { loading, error, isAuthenticated, user } = useSelector(
+    state => state.auth
+  );
 
-  // Simple effect to redirect when authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
-    }
-  }, [isAuthenticated, navigate]);
+  // Stabilize the navigate function to prevent unnecessary re-runs
+  const handleNavigate = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
 
+  // Debug logging to help identify error handling issues
   useEffect(() => {
-    if (error) {
-      dispatch(clearError());
+    console.log('Login component state:', { loading, error, isAuthenticated });
+  }, [loading, error, isAuthenticated]);
+
+  // Simple redirect when authentication succeeds
+  useEffect(() => {
+    console.log('🔍 Login useEffect triggered:', {
+      isAuthenticated,
+      user: !!user, // Add user to log for debugging
+      timestamp: Date.now(),
+    });
+    // Only redirect if authenticated AND user data is available
+    if (isAuthenticated && user) {
+      console.log('🚀 Redirecting to home page');
+      handleNavigate();
     }
-  }, [dispatch, error]);
+  }, [isAuthenticated, user, handleNavigate]);
+
+  // Remove the problematic useEffect that was causing infinite loops
+  // App.js will handle authentication redirects
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -56,6 +72,7 @@ const Login = () => {
       newErrors.password = t('auth.passwordRequired') || 'Password is required';
     }
     setErrors(newErrors);
+    // Remove this clearError call as it causes infinite loops
     return Object.keys(newErrors).length === 0;
   };
 

@@ -2,40 +2,104 @@ import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Grid,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   IconButton,
   Chip,
-  CircularProgress,
-  MenuItem,
 } from '@mui/material';
 import {
   Add,
   Edit,
   Delete,
-  People,
-  AdminPanelSettings,
   Person,
+  AdminPanelSettings,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { api } from '../services/api';
-import toast from 'react-hot-toast';
-import { parseApiError } from '../utils/errorHandler';
+import { api, endpoints } from '../services/api';
+import { toast } from 'react-hot-toast';
 
 const UserManagement = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [users, setUsers] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const queryClient = useQueryClient();
+
+  // Fetch users
+  const {
+    data: usersData,
+    isLoading,
+    refetch,
+  } = useQuery(
+    'adminUsers',
+    () =>
+      api.get(endpoints.adminUsers).then(res => {
+        setUsers(res.data);
+        return res.data;
+      }),
+    { refetchInterval: 30000 }
+  );
+
+  // Create/Update user mutation
+  const userMutation = useMutation(
+    data => {
+      if (editingUser) {
+        return api.patch(endpoints.adminUser(editingUser.id), data);
+      } else {
+        return api.post(endpoints.adminUsers, data);
+      }
+    },
+    {
+      onSuccess: () => {
+        toast.success(
+          editingUser
+            ? 'User updated successfully!'
+            : 'User created successfully!'
+        );
+        setDialogOpen(false);
+        setEditingUser(null);
+        refetch();
+      },
+      onError: error => {
+        toast.error(
+          error.response?.data?.detail ||
+            (editingUser ? 'Failed to update user' : 'Failed to create user')
+        );
+      },
+    }
+  );
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation(
+    userId => api.delete(endpoints.adminUser(userId)),
+    {
+      onSuccess: () => {
+        toast.success('User deleted successfully!');
+        setDeleteDialogOpen(false);
+        setUserToDelete(null);
+        refetch();
+      },
+      onError: error => {
+        toast.error(error.response?.data?.detail || 'Failed to delete user');
+      },
+    }
+  );
+
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -43,66 +107,6 @@ const UserManagement = () => {
     password: '',
   });
   const [formErrors, setFormErrors] = useState({});
-
-  const queryClient = useQueryClient();
-
-  // Fetch users
-  const {
-    data: users,
-    isLoading,
-    error: usersError,
-  } = useQuery('users', () =>
-    api.get('/admin/users').then(res => {
-      console.log('Users API response:', res.data);
-      return res.data;
-    })
-  );
-
-  // Create/Update user mutation
-  const userMutation = useMutation(
-    data => {
-      if (editingUser) {
-        return api.patch(`/admin/users/${editingUser.id}`, data);
-      } else {
-        return api.post('/admin/users', data);
-      }
-    },
-    {
-      onSuccess: response => {
-        console.log('User mutation success response:', response);
-        toast.success(
-          editingUser
-            ? 'User updated successfully!'
-            : 'User created successfully!'
-        );
-        console.log('Invalidating users query...');
-        queryClient.invalidateQueries('users');
-        handleCloseDialog();
-      },
-      onError: error => {
-        console.error('User mutation error:', error);
-        console.error('Error response data:', error.response?.data);
-
-        const errorMessage = parseApiError(error);
-        toast.error(errorMessage);
-      },
-    }
-  );
-
-  // Delete user mutation
-  const deleteMutation = useMutation(
-    userId => api.delete(`/admin/users/${userId}`),
-    {
-      onSuccess: () => {
-        toast.success('User deleted successfully!');
-        queryClient.invalidateQueries('users');
-      },
-      onError: error => {
-        const errorMessage = parseApiError(error);
-        toast.error(errorMessage);
-      },
-    }
-  );
 
   const validateForm = () => {
     const errors = {};
@@ -185,7 +189,7 @@ const UserManagement = () => {
         'Are you sure you want to delete this user? This action cannot be undone.'
       )
     ) {
-      deleteMutation.mutate(userId);
+      deleteUserMutation.mutate(userId);
     }
   };
 
@@ -276,15 +280,7 @@ const UserManagement = () => {
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={7} align='center'>
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
-            ) : usersError ? (
-              <TableRow>
-                <TableCell colSpan={7} align='center'>
-                  <Typography color='error'>
-                    Error loading users: {usersError.message}
-                  </Typography>
+                  <Typography>Loading users...</Typography>
                 </TableCell>
               </TableRow>
             ) : !users || users.length === 0 ? (
@@ -304,7 +300,7 @@ const UserManagement = () => {
                     <TableRow key={user.id}>
                       <TableCell>
                         <Box display='flex' alignItems='center'>
-                          <People sx={{ mr: 1, color: 'primary.main' }} />
+                          <Person sx={{ mr: 1, color: 'primary.main' }} />
                           <Typography
                             variant='body1'
                             sx={{ fontWeight: 'medium' }}
@@ -398,48 +394,45 @@ const UserManagement = () => {
               sx={{ mb: 2 }}
             />
 
-            <Grid container spacing={2} sx={{ mb: 2 }}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label='Role'
-                  select
-                  value={formData.role}
-                  onChange={e => handleInputChange('role', e.target.value)}
-                  required
-                  error={!!formErrors.role}
-                >
-                  <MenuItem value='user'>
-                    <Box display='flex' alignItems='center'>
-                      <Person sx={{ mr: 1 }} />
-                      User
-                    </Box>
-                  </MenuItem>
-                  <MenuItem value='admin'>
-                    <Box display='flex' alignItems='center'>
-                      <AdminPanelSettings sx={{ mr: 1 }} />
-                      Admin
-                    </Box>
-                  </MenuItem>
-                </TextField>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label={
-                    editingUser
-                      ? 'New Password (leave blank to keep current)'
-                      : 'Password'
-                  }
-                  type='password'
-                  value={formData.password}
-                  onChange={e => handleInputChange('password', e.target.value)}
-                  required={!editingUser}
-                  error={!!formErrors.password}
-                  helperText={formErrors.password}
-                />
-              </Grid>
-            </Grid>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel id='role-label'>Role</InputLabel>
+              <Select
+                labelId='role-label'
+                value={formData.role}
+                label='Role'
+                onChange={e => handleInputChange('role', e.target.value)}
+                required
+                error={!!formErrors.role}
+              >
+                <MenuItem value='user'>
+                  <Box display='flex' alignItems='center'>
+                    <Person sx={{ mr: 1 }} />
+                    User
+                  </Box>
+                </MenuItem>
+                <MenuItem value='admin'>
+                  <Box display='flex' alignItems='center'>
+                    <AdminPanelSettings sx={{ mr: 1 }} />
+                    Admin
+                  </Box>
+                </MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              fullWidth
+              label={
+                editingUser
+                  ? 'New Password (leave blank to keep current)'
+                  : 'Password'
+              }
+              type='password'
+              value={formData.password}
+              onChange={e => handleInputChange('password', e.target.value)}
+              required={!editingUser}
+              error={!!formErrors.password}
+              helperText={formErrors.password}
+            />
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog}>Cancel</Button>
@@ -449,7 +442,7 @@ const UserManagement = () => {
               disabled={userMutation.isLoading}
             >
               {userMutation.isLoading ? (
-                <CircularProgress size={24} />
+                <Typography>Saving...</Typography>
               ) : editingUser ? (
                 'Update'
               ) : (

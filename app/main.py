@@ -4,7 +4,7 @@ from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 import os
 import logging
 from jose import JWTError, jwt
@@ -16,7 +16,9 @@ from .schemas import (
     UserCreate, UserResponse, UserUpdate,
     CompanyCreate, CompanyUpdate, CompanyResponse,
     LoginRequest, Token, AskRequest, AskResponse, AgentAskResponse,
-    PDFUploadResponse, AgentLogResponse, QALogResponse
+    PDFUploadResponse, AgentLogResponse, QALogResponse,
+    ChatRequest, ChatConversationResponse, ChatConversationDetail,
+    ChatMessageResponse
 )
 from .auth import (
     get_current_user, admin_required, create_tokens, 
@@ -30,6 +32,7 @@ from .companies import (
 from .openai_models import openai_models_service
 from .agent_manager import agent_manager
 from .vector_store_utils import build_or_update_vector_store
+from . import crud
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -47,6 +50,7 @@ app = FastAPI(
         {"name": "VectorStore", "description": "Vector store management and operations"},
         {"name": "Agent", "description": "AI agent management and interactions"},
         {"name": "QA", "description": "Question and answer log management"},
+        {"name": "Chat", "description": "Chat conversations and messaging"},
         {"name": "Admin", "description": "Administrative operations and system management"}
     ]
 )
@@ -786,7 +790,18 @@ async def list_agent_logs(
         total_count = query.count()
         logs = query.offset(offset).limit(limit).all()
         
-        return logs
+        # Transform logs to match QALogResponse schema
+        response_logs = []
+        for log in logs:
+            response_logs.append({
+                "id": log.id,
+                "question": log.question,
+                "answer": log.answer,
+                "timestamp": log.timestamp,
+                "company_name": company.name  # Add company name from the company query
+            })
+        
+        return response_logs
         
     except HTTPException:
         raise
@@ -812,7 +827,16 @@ async def replay_agent_log(company_id: int, log_id: int, db: Session = Depends(g
                 detail="Agent log not found"
             )
         
-        return log
+        # Transform log to match AgentLogResponse schema
+        return {
+            "id": log.id,
+            "user_id": log.user_id,
+            "company_id": log.company_id,
+            "question": log.question,
+            "answer": log.answer,
+            "reasoning": log.reasoning,
+            "timestamp": log.timestamp
+        }
         
     except HTTPException:
         raise
@@ -889,7 +913,18 @@ async def list_qa_logs(
         total_count = query.count()
         logs = query.offset(offset).limit(limit).all()
         
-        return logs
+        # Transform logs to match QALogResponse schema
+        response_logs = []
+        for log in logs:
+            response_logs.append({
+                "id": log.id,
+                "question": log.question,
+                "answer": log.answer,
+                "timestamp": log.timestamp,
+                "company_name": company.name  # Add company name from the company query
+            })
+        
+        return response_logs
         
     except HTTPException:
         raise
@@ -904,6 +939,14 @@ async def list_qa_logs(
 async def get_qa_log(company_id: int, log_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     """Get a specific QA log"""
     try:
+        # Get company first
+        company = db.query(Company).filter(Company.id == company_id).first()
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company not found"
+            )
+        
         log = db.query(QALog).filter(
             QALog.id == log_id,
             QALog.company_id == company_id
@@ -915,7 +958,14 @@ async def get_qa_log(company_id: int, log_id: int, db: Session = Depends(get_db)
                 detail="QA log not found"
             )
         
-        return log
+        # Transform log to match QALogResponse schema
+        return {
+            "id": log.id,
+            "question": log.question,
+            "answer": log.answer,
+            "timestamp": log.timestamp,
+            "company_name": company.name  # Add company name from the company query
+        }
         
     except HTTPException:
         raise
@@ -1183,18 +1233,567 @@ async def force_remove_agent(company_id: int, db: Session = Depends(get_db), use
         )
 
 # ============================================================================
+# TEST ENDPOINTS
+# ============================================================================
+
+@app.get("/test/health", tags=["Admin"])
+async def test_health_check():
+    """Simple test endpoint to debug health check issues"""
+    try:
+        return {
+            "message": "Health check test endpoint working",
+            "timestamp": datetime.utcnow(),
+            "test": "success"
+        }
+    except Exception as e:
+        logger.error(f"Test health check error: {e}")
+        return {
+            "message": "Health check test endpoint failed",
+            "error": str(e),
+            "timestamp": datetime.utcnow()
+        }
+
+# ============================================================================
+# SYSTEM STATUS ENDPOINTS
+# ============================================================================
+
+@app.get("/admin/system/status", tags=["Admin"])
+async def get_system_status(user=Depends(admin_required)):
+    """Get comprehensive system status including counts and service health"""
+    try:
+        db = next(get_db())
+        
+        # Get basic counts
+        try:
+            user_count = db.query(User).count()
+            company_count = db.query(Company).count()
+            pdf_count = db.query(PDFFile).count()
+            qa_log_count = db.query(QALog).count()
+            agent_log_count = db.query(AgentLog).count()
+        except Exception as e:
+            logger.error(f"Error getting database counts: {e}")
+            user_count = company_count = pdf_count = qa_log_count = agent_log_count = 0
+        
+        # Get service health
+        try:
+            health_response = await health_check()
+            service_health = health_response.get("services", {})
+            overall_health = health_response.get("overall_status", "unknown")
+        except Exception as e:
+            logger.error(f"Error getting health status: {e}")
+            service_health = {}
+            overall_health = "unknown"
+        
+        # Get agent status
+        try:
+            agent_status = agent_manager.get_agent_stats()
+        except Exception as e:
+            logger.error(f"Error getting agent status: {e}")
+            agent_status = {"active_agents": 0, "total_memory": 0}
+        
+        # Get system info
+        import platform
+        import psutil
+        
+        try:
+            system_info = {
+                "python_version": platform.python_version(),
+                "platform": platform.platform(),
+                "cpu_count": psutil.cpu_count(),
+                "memory_total": psutil.virtual_memory().total,
+                "memory_available": psutil.virtual_memory().available,
+                "disk_usage": psutil.disk_usage('/').percent if os.path.exists('/') else 0
+            }
+        except ImportError:
+            system_info = {
+                "python_version": platform.python_version(),
+                "platform": platform.platform(),
+                "note": "psutil not available for detailed system metrics"
+            }
+        except Exception as e:
+            logger.error(f"Error getting system info: {e}")
+            system_info = {"error": str(e)}
+        
+        db.close()
+        
+        return {
+            "timestamp": datetime.utcnow(),
+            "overall_status": overall_health,
+            "counts": {
+                "users": user_count,
+                "companies": company_count,
+                "pdf_files": pdf_count,
+                "qa_logs": qa_log_count,
+                "agent_logs": agent_log_count
+            },
+            "services": service_health,
+            "agents": agent_status,
+            "system": system_info
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting system status: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get system status"
+        )
+
+# ============================================================================
 # HEALTH CHECK ENDPOINT
 # ============================================================================
 
 @app.get("/health", tags=["Admin"])
 async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow(),
-        "services": {
-            "database": "connected",
-            "embeddings": "available" if embeddings else "unavailable",
-            "openai_api": "configured" if os.getenv("OPENAI_API_KEY") else "not_configured"
+    """Health check endpoint that actually tests service availability"""
+    try:
+        logger.info("Starting health check...")
+        health_status = {
+            "timestamp": datetime.utcnow(),
+            "overall_status": "unknown",
+            "services": {}
         }
-    }
+        
+        # Test database connectivity
+        try:
+            logger.info("Testing database connectivity...")
+            db = next(get_db())
+            # Try a simple query - use text() for raw SQL
+            from sqlalchemy import text
+            db.execute(text("SELECT 1"))
+            db.close()
+            health_status["services"]["database"] = {
+                "status": "healthy",
+                "message": "Database connection successful"
+            }
+            logger.info("Database health check passed")
+        except Exception as e:
+            logger.error(f"Database health check failed: {e}")
+            health_status["services"]["database"] = {
+                "status": "unhealthy",
+                "message": f"Database connection failed: {str(e)}"
+            }
+        
+        # Test embeddings service
+        try:
+            logger.info("Testing embeddings service...")
+            if embeddings:
+                # Try to create a simple test embedding
+                test_text = "test"
+                test_embedding = embeddings.embed_query(test_text)
+                if test_embedding and len(test_embedding) > 0:
+                    health_status["services"]["embeddings"] = {
+                        "status": "healthy",
+                        "message": "Embeddings service working"
+                    }
+                    logger.info("Embeddings health check passed")
+                else:
+                    health_status["services"]["embeddings"] = {
+                        "status": "unhealthy",
+                        "message": "Embeddings service returned empty result"
+                    }
+                    logger.warning("Embeddings service returned empty result")
+            else:
+                health_status["services"]["embeddings"] = {
+                    "status": "unavailable",
+                    "message": "Embeddings service not configured"
+                }
+                logger.info("Embeddings service not configured")
+        except Exception as e:
+            logger.error(f"Embeddings health check failed: {e}")
+            health_status["services"]["embeddings"] = {
+                "status": "unhealthy",
+                "message": f"Embeddings service error: {str(e)}"
+            }
+        
+        # Test OpenAI API
+        try:
+            logger.info("Testing OpenAI API configuration...")
+            openai_key = os.getenv("OPENAI_API_KEY")
+            if openai_key:
+                # Just test the configuration, don't make an actual request
+                health_status["services"]["openai_api"] = {
+                    "status": "configured",
+                    "message": "OpenAI API key configured"
+                }
+                logger.info("OpenAI API key found")
+            else:
+                health_status["services"]["openai_api"] = {
+                    "status": "not_configured",
+                    "message": "OpenAI API key not found in environment"
+                }
+                logger.warning("OpenAI API key not found")
+        except Exception as e:
+            logger.error(f"OpenAI API health check failed: {e}")
+            health_status["services"]["openai_api"] = {
+                "status": "error",
+                "message": f"OpenAI API test failed: {str(e)}"
+            }
+        
+        # Determine overall status
+        logger.info("Determining overall health status...")
+        service_statuses = [service["status"] for service in health_status["services"].values()]
+        logger.info(f"Service statuses: {service_statuses}")
+        
+        if "unhealthy" in service_statuses:
+            health_status["overall_status"] = "unhealthy"
+            logger.warning("Overall status: unhealthy")
+        elif "unavailable" in service_statuses and "healthy" not in service_statuses:
+            health_status["overall_status"] = "degraded"
+            logger.warning("Overall status: degraded")
+        elif all(status in ["healthy", "configured"] for status in service_statuses):
+            health_status["overall_status"] = "healthy"
+            logger.info("Overall status: healthy")
+        elif "healthy" in service_statuses:
+            health_status["overall_status"] = "operational"
+            logger.info("Overall status: operational")
+        else:
+            health_status["overall_status"] = "unknown"
+            logger.warning("Overall status: unknown")
+        
+        logger.info(f"Health check completed. Overall status: {health_status['overall_status']}")
+        
+        return health_status
+        
+    except Exception as e:
+        logger.error(f"Health check error: {e}", exc_info=True)
+        return {
+            "timestamp": datetime.utcnow(),
+            "overall_status": "error",
+            "error": f"Health check failed: {str(e)}",
+            "services": {}
+        }
+
+# ============================================================================
+# CHAT ENDPOINTS
+# ============================================================================
+
+@app.get("/chat/conversations", response_model=List[ChatConversationResponse], tags=["Chat"])
+async def get_user_conversations(
+    company_id: Optional[int] = Query(None, description="Filter by company ID"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all chat conversations for the current user"""
+    try:
+        conversations = crud.get_user_conversations(db, current_user.id, company_id)
+        
+        # Convert to response format with additional data
+        response_conversations = []
+        for conv in conversations:
+            # Get company name
+            company = db.query(Company).filter(Company.id == conv.company_id).first()
+            company_name = company.name if company else "Unknown Company"
+            
+            # Get message count and last message info
+            messages = crud.get_conversation_messages(db, conv.id)
+            message_count = len(messages)
+            last_message = None
+            last_message_time = None
+            
+            if messages:
+                last_message = messages[-1].content[:100] + "..." if len(messages[-1].content) > 100 else messages[-1].content
+                last_message_time = messages[-1].timestamp
+            
+            response_conversations.append(ChatConversationResponse(
+                id=conv.id,
+                user_id=conv.user_id,
+                company_id=conv.company_id,
+                company_name=company_name,
+                title=conv.title,
+                chat_type=conv.chat_type,
+                created_at=conv.created_at,
+                updated_at=conv.updated_at,
+                message_count=message_count,
+                last_message=last_message,
+                last_message_time=last_message_time
+            ))
+        
+        return response_conversations
+        
+    except Exception as e:
+        logger.error(f"Error getting conversations: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get conversations"
+        )
+
+@app.get("/chat/conversations/{conversation_id}", response_model=ChatConversationDetail, tags=["Chat"])
+async def get_conversation_detail(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get detailed conversation with all messages"""
+    try:
+        conversation = crud.get_chat_conversation(db, conversation_id)
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found"
+            )
+        
+        # Check if user owns this conversation
+        if conversation.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
+            )
+        
+        # Get company name
+        company = db.query(Company).filter(Company.id == conversation.company_id).first()
+        company_name = company.name if company else "Unknown Company"
+        
+        # Get messages
+        messages = crud.get_conversation_messages(db, conversation_id)
+        
+        # Convert messages to response format
+        response_messages = []
+        for msg in messages:
+            response_messages.append(ChatMessageResponse(
+                id=msg.id,
+                message_type=msg.message_type,
+                content=msg.content,
+                timestamp=msg.timestamp,
+                conversation_id=msg.conversation_id
+            ))
+        
+        return ChatConversationDetail(
+            id=conversation.id,
+            user_id=conversation.user_id,
+            company_id=conversation.company_id,
+            company_name=company_name,
+            title=conversation.title,
+            chat_type=conversation.chat_type,
+            created_at=conversation.created_at,
+            updated_at=conversation.updated_at,
+            message_count=len(response_messages),
+            last_message=None,
+            last_message_time=None,
+            messages=response_messages
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting conversation detail: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get conversation detail"
+        )
+
+@app.post("/chat/ask", tags=["Chat"])
+async def chat_ask(
+    request: ChatRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Ask a question and save to chat conversation"""
+    try:
+        # Check if company exists
+        company = db.query(Company).filter(Company.id == request.company_id).first()
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company not found"
+            )
+        
+        # Create or get conversation
+        conversation_id = request.conversation_id
+        if not conversation_id:
+            # Create new conversation
+            title = request.question[:50] + "..." if len(request.question) > 50 else request.question
+            conversation = crud.create_chat_conversation(
+                db, current_user.id, request.company_id, title, request.chat_type
+            )
+            conversation_id = conversation.id
+        else:
+            # Verify conversation exists and user owns it
+            conversation = crud.get_chat_conversation(db, conversation_id)
+            if not conversation or conversation.user_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied to conversation"
+                )
+        
+        # Save user message
+        crud.create_chat_message(db, conversation_id, "user", request.question)
+        
+        # Get answer based on chat type
+        if request.chat_type == "simple":
+            # Use existing QA endpoint logic
+            try:
+                # Check PDF count
+                pdf_count = db.query(PDFFile).filter(PDFFile.company_id == request.company_id).count()
+                if pdf_count == 0:
+                    answer = "No PDF documents found for this company. Please contact an administrator to upload documents."
+                    answer_type = "error"
+                else:
+                    # Check embeddings availability
+                    if not embeddings:
+                        answer = "AI service temporarily unavailable. Please try again later."
+                        answer_type = "error"
+                    else:
+                        # Build or update vector store
+                        vector_store = await build_or_update_vector_store(company.name, embeddings)
+                        
+                        # Get actual document count from vector store
+                        from .vector_store_utils import get_vector_store_document_count, is_valid_vector_store
+                        
+                        if not is_valid_vector_store(vector_store):
+                            answer = "Vector store is not valid or empty. Please contact an administrator."
+                            answer_type = "error"
+                        else:
+                            vector_doc_count = get_vector_store_document_count(vector_store)
+                            
+                            if vector_doc_count == 0:
+                                answer = "Vector store has no documents. Please contact an administrator."
+                                answer_type = "error"
+                            else:
+                                # Create QA chain
+                                from langchain_openai import ChatOpenAI
+                                from langchain.chains import RetrievalQA
+                                
+                                llm = ChatOpenAI(
+                                    openai_api_key=os.getenv("OPENAI_API_KEY"),
+                                    model_name=company.model_name,
+                                    temperature=company.temperature,
+                                    max_tokens=company.max_tokens
+                                )
+                                
+                                qa_chain = RetrievalQA.from_chain_type(
+                                    llm=llm,
+                                    chain_type="stuff",
+                                    retriever=vector_store.as_retriever(search_kwargs={"k": vector_doc_count})
+                                )
+                                
+                                # Get answer
+                                qa_response = qa_chain.invoke({"query": request.question})
+                                answer = qa_response.get("result", "No answer generated")
+                                
+                                # Clean up the answer
+                                if isinstance(answer, str):
+                                    answer = answer.strip()
+                                    if "\\n" in answer or "\\t" in answer:
+                                        answer = answer.replace("\\n", " ").replace("\\t", " ")
+                                    answer = " ".join(answer.split())
+                                else:
+                                    answer = str(answer)
+                                
+                                answer_type = "assistant"
+                                
+                                # Log the question and answer
+                                qa_log = QALog(
+                                    company_id=request.company_id,
+                                    user_id=current_user.id,
+                                    question=request.question,
+                                    answer=answer,
+                                    timestamp=datetime.utcnow()
+                                )
+                                db.add(qa_log)
+                                db.commit()
+                                
+            except Exception as e:
+                answer = f"Error processing question: {str(e)}"
+                answer_type = "error"
+                logger.error(f"Error in chat simple QA: {e}", exc_info=True)
+        else:
+            # Use existing agent endpoint logic
+            try:
+                # Check PDF count
+                pdf_count = db.query(PDFFile).filter(PDFFile.company_id == request.company_id).count()
+                if pdf_count == 0:
+                    answer = "No PDF documents found for this company. Please contact an administrator to upload documents."
+                    answer_type = "error"
+                else:
+                    # Get or create agent
+                    try:
+                        agent = await agent_manager.get_agent(company, embeddings)
+                        
+                        # Ask question
+                        response = await agent.ainvoke({"input": request.question})
+                        answer = response.get("output", "No answer generated")
+                        
+                        # Clean up the agent answer
+                        if isinstance(answer, str):
+                            answer = answer.strip()
+                            if "\\n" in answer or "\\t" in answer:
+                                answer = answer.replace("\\n", " ").replace("\\t", " ")
+                            answer = " ".join(answer.split())
+                        else:
+                            answer = str(answer)
+                        
+                        # Check if response is incomplete or invalid
+                        if not answer or answer.strip() == "" or "Invalid or incomplete response" in answer:
+                            answer = "I apologize, but I encountered an issue processing your question. Please try again."
+                        
+                        answer_type = "assistant"
+                        
+                        # Log the interaction
+                        agent_log = AgentLog(
+                            company_id=request.company_id,
+                            user_id=current_user.id,
+                            question=request.question,
+                            answer=answer,
+                            reasoning=str(response) if response else "Agent response generated",
+                            timestamp=datetime.utcnow()
+                        )
+                        db.add(agent_log)
+                        db.commit()
+                        
+                    except Exception as agent_error:
+                        logger.error(f"Agent error in chat: {agent_error}")
+                        answer = f"I encountered an error while processing your question: {str(agent_error)}"
+                        answer_type = "error"
+                        
+            except Exception as e:
+                answer = f"Error processing question: {str(e)}"
+                answer_type = "error"
+                logger.error(f"Error in chat agent QA: {e}", exc_info=True)
+        
+        # Save assistant/error message
+        crud.create_chat_message(db, conversation_id, answer_type, answer)
+        
+        # Update conversation title if it's the first message
+        if len(crud.get_conversation_messages(db, conversation_id)) == 2:  # User + Assistant
+            crud.update_conversation_title(db, conversation_id, request.question[:50] + "...")
+        
+        return {
+            "conversation_id": conversation_id,
+            "answer": answer,
+            "message_type": answer_type
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in chat ask: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process chat request"
+        )
+
+@app.delete("/chat/conversations/{conversation_id}", tags=["Chat"])
+async def delete_conversation(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a chat conversation"""
+    try:
+        success = crud.delete_conversation(db, conversation_id, current_user.id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found or access denied"
+            )
+        
+        return {"message": "Conversation deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting conversation: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete conversation"
+        )
