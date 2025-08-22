@@ -1,9 +1,20 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// Load language from localStorage or default to 'en'
+const getInitialLanguage = () => {
+  try {
+    const savedLanguage = localStorage.getItem('i18nextLng');
+    return savedLanguage || 'en';
+  } catch (error) {
+    console.warn('Could not load language from localStorage:', error);
+    return 'en';
+  }
+};
+
 const initialState = {
   sidebarOpen: true,
   theme: 'light',
-  language: 'en',
+  language: getInitialLanguage(),
   notifications: [],
   loadingStates: {},
 };
@@ -22,7 +33,14 @@ const uiSlice = createSlice({
       state.theme = action.payload;
     },
     setLanguage: (state, action) => {
-      state.language = action.payload;
+      const newLanguage = action.payload;
+      state.language = newLanguage;
+      // Save to localStorage for persistence
+      try {
+        localStorage.setItem('i18nextLng', newLanguage);
+      } catch (error) {
+        console.warn('Could not save language to localStorage:', error);
+      }
     },
     addNotification: (state, action) => {
       state.notifications.push({

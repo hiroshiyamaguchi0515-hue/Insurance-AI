@@ -38,7 +38,15 @@
     "healthy": "正常",
     "warning": "警告",
     "error": "エラー",
-    "unknown": "不明"
+    "unknown": "不明",
+    "user": "ユーザー",
+    "admin": "管理者",
+    "saving": "保存中...",
+    "found": "見つかりました",
+    "company": "会社",
+    "change": "変更",
+    "view": "表示",
+    "language": "言語"
   },
   "navigation": {
     "dashboard": "ダッシュボード",
@@ -112,7 +120,10 @@
     "active": "アクティブ",
     "recommended": "推奨",
     "loadingModels": "利用可能なAIモデルを読み込み中...",
-    "modelsError": "AIモデルの読み込みに失敗しました。ページを更新してお試しください。"
+    "modelsError": "AIモデルの読み込みに失敗しました。ページを更新してお試しください。",
+    "temperatureRange": "温度は0から2の間である必要があります",
+    "maxTokensRange": "最大トークン数は1から4000の間である必要があります",
+    "activityLogs": "アクティビティログ"
   },
   "user": {
     "title": "ユーザー管理",
@@ -132,7 +143,7 @@
     "selectCompany": "会社を選択",
     "uploadPDF": "PDFをアップロード",
     "uploadTitle": "PDF文書をアップロード",
-    "dragDrop": "PDFファイルをここにドラッグ＆ドロップ",
+    "dragDrop": "PDFファイルをここにドラッグ＆ドロップするか、上のアップロードボタンをクリックしてください",
     "orClick": "またはクリックしてファイルを選択",
     "dropHere": "PDFをここにドロップ",
     "selectFile": "またはクリックしてファイルを選択",
@@ -149,15 +160,34 @@
     "uploadDate": "アップロード日",
     "available": "利用可能",
     "loadingCompanies": "会社を読み込み中...",
-    "noCompanies": "利用可能な会社がありません"
+    "noCompanies": "利用可能な会社がありません",
+    "company": "会社",
+    "uploaded": "アップロード済み",
+    "deleting": "削除中...",
+    "deleteConfirmTitle": "削除の確認",
+    "selectCompanyFirst": "最初に会社を選択してください",
+    "documentsFor": "{{companyName}}のドキュメント",
+    "uploadDocuments": "ドキュメントをアップロード",
+    "pdfs": "PDF"
   },
   "qa": {
-    "questionLabel": "あなたの質問",
-    "questionPlaceholder": "ドキュメントについて何でも聞いてください...",
+    "questionLabel": "質問",
+    "questionPlaceholder": "文書について何でも聞いてください...",
     "askQuestion": "質問する",
     "processing": "処理中...",
     "simpleQA": "シンプルQA",
-    "agentQA": "AIエージェントチャット"
+    "agentQA": "AIエージェントチャット",
+    "title": "QAログ",
+    "selectCompany": "会社を選択",
+    "selectCompanyDescription": "QAログと会話履歴を表示する会社を選択してください",
+    "logs": "ログ",
+    "question": "質問",
+    "answer": "回答",
+    "noLogs": "ログが見つかりません",
+    "noLogsDescription": "この会社のQAログはまだ作成されていません",
+    "clearLogs": "ログをクリア",
+    "clearLogsConfirm": "この会社のすべてのQAログをクリアしてもよろしいですか？",
+    "logDetails": "ログ詳細"
   },
   "agent": {
     "title": "AIエージェント管理",
@@ -221,11 +251,13 @@
     "indexType": "インデックスタイプ",
     "autoRebuild": "自動再構築",
     "chunkSize": "チャンクサイズ",
-    "overlap": "オーバーラップ"
+    "overlap": "オーバーラップ",
+    "notCreated": "作成されていません",
+    "never": "なし"
   },
   "systemHealth": {
     "title": "システムヘルス",
-    "overallStatus": "全体的なシステムステータス",
+    "overallStatus": "システム全体のステータス",
     "serviceStatus": "サービスステータス",
     "systemMetrics": "システムメトリクス",
     "recentEvents": "最近のシステムイベント",
@@ -233,6 +265,7 @@
     "database": "データベース",
     "aiEmbeddings": "AI埋め込み",
     "openaiApi": "OpenAI API",
+    "vectorStore": "ベクターストア",
     "memoryUsage": "メモリ使用量",
     "cpuUsage": "CPU使用量",
     "diskUsage": "ディスク使用量",
@@ -248,7 +281,23 @@
     "responseTime": "応答時間",
     "autoRecovery": "自動復旧",
     "alertSystem": "アラートシステム",
-    "logging": "ログ記録"
+    "logging": "ログ",
+    "users": "ユーザー",
+    "companies": "会社",
+    "documents": "ドキュメント",
+    "qaLogs": "QAログ",
+    "noInformation": "情報が利用できません",
+    "databaseHealthy": "データベース接続成功",
+    "databaseError": "データベース接続失敗",
+    "databaseUnknown": "データベースステータス不明",
+    "embeddingsHealthy": "埋め込みサービス動作中",
+    "embeddingsError": "埋め込みサービス失敗",
+    "embeddingsUnknown": "埋め込みステータス不明",
+    "openaiConfigured": "OpenAI APIキー設定済み",
+    "openaiHealthy": "OpenAI API動作中",
+    "openaiError": "OpenAI API失敗",
+    "openaiUnknown": "OpenAI APIステータス不明",
+    "memoryStatus": "システムメモリステータス"
   },
   "errors": {
     "general": "何か問題が発生しました。もう一度お試しください。",
@@ -265,5 +314,108 @@
     "error": "エラー",
     "warning": "警告",
     "info": "情報"
+  },
+  "chat": {
+    "title": "チャット会話",
+    "selectCompany": "会社を選択",
+    "documentQA": "文書Q&A",
+    "aiAgentChat": "AIエージェントチャット",
+    "newChat": "新しいチャット",
+    "noMessages": "まだメッセージがありません",
+    "noConversations": "まだ会話がありません",
+    "startNewChat": "新しいチャットを開始して質問を始めましょう",
+    "messages": "メッセージ",
+    "questionPlaceholder": "質問を入力してください...",
+    "sending": "送信中...",
+    "send": "送信",
+    "selectConversation": "会話を選択",
+    "chooseConversation": "リストから会話を選択するか、新しいチャットを開始してください",
+    "firstQuestion": "最初の質問",
+    "askAnything": "文書について何でも聞いてください...",
+    "startChat": "チャット開始",
+    "questionSent": "質問が正常に送信されました！",
+    "questionFailed": "質問の送信に失敗しました",
+    "conversationDeleted": "会話が正常に削除されました！",
+    "deleteFailed": "会話の削除に失敗しました",
+    "deleteConfirm": "この会話を削除してもよろしいですか？",
+    "yesterday": "昨日"
+  },
+  "customerDashboard": {
+    "quickAnswers": "文書から素早く回答を得る",
+    "interactiveConversation": "AIエージェントとの対話的な会話",
+    "contactAdmin": "新しいPDFを追加するには管理者に連絡してください",
+    "companyInformation": "会社情報",
+    "agentLogs": "エージェントログ",
+    "model": "モデル",
+    "temperature": "温度",
+    "recentActivityDescription": "最近の質問とインタラクションがここに表示されます",
+    "noCompanies": "利用可能な会社がありません"
+  },
+  "landing": {
+    "hero": {
+      "title": "AI搭載保険アシスタント",
+      "subtitle": "インテリジェントなAIボットで保険に関する質問に即座に回答。ポリシー、請求、補償情報の24時間365日サポート。",
+      "getStarted": "始める",
+      "learnMore": "詳細を見る"
+    },
+    "features": {
+      "title": "スマート保険ソリューション",
+      "subtitle": "シームレスな保険管理とカスタマーサポートに必要なすべて",
+      "documentAnalysis": {
+        "title": "ポリシー分析",
+        "description": "保険ポリシー、契約書、補償文書のAI搭載分析で素早い洞察を提供"
+      },
+      "aiAgents": {
+        "title": "保険AIボット",
+        "description": "保険用語を理解し、正確なポリシー情報を提供するインテリジェントチャットボット"
+      },
+      "vectorStore": {
+        "title": "知識ベース",
+        "description": "保険ポリシー、規制、顧客情報の包括的データベースで即座にアクセス"
+      },
+      "security": {
+        "title": "データ保護",
+        "description": "機密情報のための暗号化ストレージとHIPAA準拠データ処理による銀行レベルのセキュリティ"
+      },
+      "performance": {
+        "title": "即座の応答",
+        "description": "保険に関する質問、請求状況、ポリシーの質問に対する1秒未満の応答時間"
+      },
+      "analytics": {
+        "title": "顧客洞察",
+        "description": "顧客インタラクション、ポリシー照会、サポート効率の包括的分析"
+      }
+    },
+    "benefits": {
+      "title": "なぜ私たちの保険AIを選ぶのか？",
+      "subtitle": "保険業界向けに設計された最先端AI技術で保険業務を変革",
+      "time": "AIの即座の応答で顧客の待ち時間を数時間から数秒に短縮",
+      "accuracy": "保険ポリシー情報と補償詳細で99%以上の精度",
+      "scalability": "エンタープライズグレードのインフラストラクチャで数千の顧客照会を同時処理",
+      "cost": "顧客満足度を向上させながら運用コストを大幅に削減",
+      "security": "機密保険データのためのHIPAAとSOC 2準拠セキュリティ",
+      "integration": "既存の保険管理システムとワークフローとのシームレスな統合"
+    },
+    "stats": {
+      "title": "保険プラットフォーム統計",
+      "uptime": "稼働時間",
+      "responseTime": "応答時間",
+      "support": "サポート",
+      "security": "セキュリティ"
+    },
+    "cta": {
+      "title": "保険事業の変革の準備はできましたか？",
+      "subtitle": "AI搭載カスタマーサポートプラットフォームを既に使用している主要保険会社に参加",
+      "button": "無料トライアルを開始"
+    },
+    "footer": {
+      "copyright": "© 2025 保険システム。全著作権所有。AI搭載。"
+    },
+    "nav": {
+      "features": "機能",
+      "pricing": "料金",
+      "about": "会社概要",
+      "login": "ログイン"
+    }
   }
 }

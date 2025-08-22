@@ -28,24 +28,19 @@ import {
   Person,
   AdminPanelSettings,
 } from '@mui/icons-material';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation } from 'react-query';
+import { useTranslation } from 'react-i18next';
 import { api, endpoints } from '../services/api';
 import { toast } from 'react-hot-toast';
 
 const UserManagement = () => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState(null);
-  const queryClient = useQueryClient();
 
   // Fetch users
-  const {
-    data: usersData,
-    isLoading,
-    refetch,
-  } = useQuery(
+  const { isLoading, refetch } = useQuery(
     'adminUsers',
     () =>
       api.get(endpoints.adminUsers).then(res => {
@@ -67,9 +62,7 @@ const UserManagement = () => {
     {
       onSuccess: () => {
         toast.success(
-          editingUser
-            ? 'User updated successfully!'
-            : 'User created successfully!'
+          editingUser ? t('user.updateSuccess') : t('user.createSuccess')
         );
         setDialogOpen(false);
         setEditingUser(null);
@@ -78,7 +71,7 @@ const UserManagement = () => {
       onError: error => {
         toast.error(
           error.response?.data?.detail ||
-            (editingUser ? 'Failed to update user' : 'Failed to create user')
+            (editingUser ? t('errors.general') : t('errors.general'))
         );
       },
     }
@@ -89,13 +82,11 @@ const UserManagement = () => {
     userId => api.delete(endpoints.adminUser(userId)),
     {
       onSuccess: () => {
-        toast.success('User deleted successfully!');
-        setDeleteDialogOpen(false);
-        setUserToDelete(null);
+        toast.success(t('user.deleteSuccess'));
         refetch();
       },
       onError: error => {
-        toast.error(error.response?.data?.detail || 'Failed to delete user');
+        toast.error(error.response?.data?.detail || t('errors.general'));
       },
     }
   );
@@ -112,21 +103,21 @@ const UserManagement = () => {
     const errors = {};
 
     if (!formData.username.trim()) {
-      errors.username = 'Username is required';
+      errors.username = `${t('common.username')} ${t('common.required')}`;
     }
 
     if (!formData.email.trim()) {
-      errors.email = 'Email is required';
+      errors.email = `${t('common.email')} ${t('common.required')}`;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Email is invalid';
+      errors.email = t('user.emailInvalid');
     }
 
     if (!editingUser && !formData.password.trim()) {
-      errors.password = 'Password is required for new users';
+      errors.password = t('user.passwordRequired');
     }
 
     if (!formData.role) {
-      errors.role = 'Role is required';
+      errors.role = t('user.roleRequired');
     }
 
     setFormErrors(errors);
@@ -171,7 +162,7 @@ const UserManagement = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error('Please fix the form errors before submitting');
+      toast.error(t('errors.validation'));
       return;
     }
 
@@ -184,11 +175,7 @@ const UserManagement = () => {
   };
 
   const handleDelete = userId => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete this user? This action cannot be undone.'
-      )
-    ) {
+    if (window.confirm(t('user.deleteConfirm'))) {
       deleteUserMutation.mutate(userId);
     }
   };
@@ -237,7 +224,7 @@ const UserManagement = () => {
         alignItems='center'
         minHeight='400px'
       >
-        <Typography>Loading users...</Typography>
+        <Typography>{t('common.loading')}</Typography>
       </Box>
     );
   }
@@ -251,14 +238,14 @@ const UserManagement = () => {
         mb={4}
       >
         <Typography variant='h4' component='h1' sx={{ fontWeight: 'bold' }}>
-          User Management
+          {t('user.title')}
         </Typography>
         <Button
           variant='contained'
           startIcon={<Add />}
           onClick={() => handleOpenDialog()}
         >
-          Add User
+          {t('user.addUser')}
         </Button>
       </Box>
 
@@ -267,26 +254,28 @@ const UserManagement = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>User</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Role</TableCell>
-              <TableCell>Created</TableCell>
-              <TableCell>Updated</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>{t('common.name')}</TableCell>
+              <TableCell>{t('common.email')}</TableCell>
+              <TableCell>{t('common.role')}</TableCell>
+              <TableCell>{t('common.created')}</TableCell>
+              <TableCell>{t('common.updated')}</TableCell>
+              <TableCell>{t('common.status')}</TableCell>
+              <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={7} align='center'>
-                  <Typography>Loading users...</Typography>
+                  <Typography>{t('common.loading')}</Typography>
                 </TableCell>
               </TableRow>
             ) : !users || users.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align='center'>
-                  <Typography color='text.secondary'>No users found</Typography>
+                  <Typography color='text.secondary'>
+                    {t('common.no')} {t('common.name')} {t('common.found')}
+                  </Typography>
                 </TableCell>
               </TableRow>
             ) : (
@@ -333,7 +322,11 @@ const UserManagement = () => {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Chip label='Active' color='success' size='small' />
+                        <Chip
+                          label={t('common.active')}
+                          color='success'
+                          size='small'
+                        />
                       </TableCell>
                       <TableCell>
                         <Box display='flex' gap={1}>
@@ -368,12 +361,14 @@ const UserManagement = () => {
         maxWidth='sm'
         fullWidth
       >
-        <DialogTitle>{editingUser ? 'Edit User' : 'Add New User'}</DialogTitle>
+        <DialogTitle>
+          {editingUser ? t('user.editUser') : t('user.addUser')}
+        </DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent>
             <TextField
               fullWidth
-              label='Username'
+              label={t('common.username')}
               value={formData.username}
               onChange={e => handleInputChange('username', e.target.value)}
               required
@@ -384,7 +379,7 @@ const UserManagement = () => {
 
             <TextField
               fullWidth
-              label='Email'
+              label={t('common.email')}
               type='email'
               value={formData.email}
               onChange={e => handleInputChange('email', e.target.value)}
@@ -395,11 +390,11 @@ const UserManagement = () => {
             />
 
             <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel id='role-label'>Role</InputLabel>
+              <InputLabel id='role-label'>{t('common.role')}</InputLabel>
               <Select
                 labelId='role-label'
                 value={formData.role}
-                label='Role'
+                label={t('common.role')}
                 onChange={e => handleInputChange('role', e.target.value)}
                 required
                 error={!!formErrors.role}
@@ -407,13 +402,13 @@ const UserManagement = () => {
                 <MenuItem value='user'>
                   <Box display='flex' alignItems='center'>
                     <Person sx={{ mr: 1 }} />
-                    User
+                    {t('common.user')}
                   </Box>
                 </MenuItem>
                 <MenuItem value='admin'>
                   <Box display='flex' alignItems='center'>
                     <AdminPanelSettings sx={{ mr: 1 }} />
-                    Admin
+                    {t('common.admin')}
                   </Box>
                 </MenuItem>
               </Select>
@@ -421,11 +416,7 @@ const UserManagement = () => {
 
             <TextField
               fullWidth
-              label={
-                editingUser
-                  ? 'New Password (leave blank to keep current)'
-                  : 'Password'
-              }
+              label={editingUser ? t('user.newPassword') : t('common.password')}
               type='password'
               value={formData.password}
               onChange={e => handleInputChange('password', e.target.value)}
@@ -435,18 +426,18 @@ const UserManagement = () => {
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleCloseDialog}>{t('common.cancel')}</Button>
             <Button
               type='submit'
               variant='contained'
               disabled={userMutation.isLoading}
             >
               {userMutation.isLoading ? (
-                <Typography>Saving...</Typography>
+                <Typography>{t('common.saving')}</Typography>
               ) : editingUser ? (
-                'Update'
+                t('common.update')
               ) : (
-                'Create'
+                t('common.create')
               )}
             </Button>
           </DialogActions>

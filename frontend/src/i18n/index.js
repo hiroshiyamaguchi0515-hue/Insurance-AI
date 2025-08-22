@@ -30,7 +30,12 @@ i18n
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
       caches: ['localStorage'],
+      lookupLocalStorage: 'i18nextLng',
+      lookupSessionStorage: 'i18nextLng',
     },
+
+    // Ensure language is properly initialized
+    initImmediate: false,
   });
 
 export default i18n;

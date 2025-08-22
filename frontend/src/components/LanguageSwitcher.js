@@ -1,14 +1,14 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { Box, Button, Menu, MenuItem, Typography } from '@mui/material';
 import { Language } from '@mui/icons-material';
-import { setLanguage } from '../store/slices/uiSlice';
+import { useLanguagePersistence } from '../hooks/useLanguagePersistence';
 
 const LanguageSwitcher = () => {
-  const { i18n } = useTranslation();
-  const dispatch = useDispatch();
+  const { t } = useTranslation();
   const currentLanguage = useSelector(state => state.ui.language);
+  const { changeLanguage } = useLanguagePersistence();
   const [anchorEl, setAnchorEl] = React.useState(null);
 
   const handleClick = event => {
@@ -20,14 +20,23 @@ const LanguageSwitcher = () => {
   };
 
   const handleLanguageChange = language => {
-    i18n.changeLanguage(language);
-    dispatch(setLanguage(language));
+    changeLanguage(language);
     handleClose();
   };
 
   const languages = [
-    { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'ja', name: '日本語', flag: '🇯🇵' },
+    {
+      code: 'en',
+      name: 'English',
+      flag: '🇺🇸',
+      flagUrl: 'https://flagcdn.com/w20/us.png',
+    },
+    {
+      code: 'ja',
+      name: '日本語',
+      flag: '🇯🇵',
+      flagUrl: 'https://flagcdn.com/w20/jp.png',
+    },
   ];
 
   const currentLang =
@@ -39,9 +48,19 @@ const LanguageSwitcher = () => {
         onClick={handleClick}
         startIcon={<Language />}
         sx={{ color: 'inherit', textTransform: 'none' }}
+        aria-label={t('common.language')}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <span>{currentLang.flag}</span>
+          <img
+            src={currentLang.flagUrl}
+            alt={currentLang.name}
+            style={{
+              width: '20px',
+              height: '15px',
+              borderRadius: '2px',
+              objectFit: 'cover',
+            }}
+          />
           <Typography variant='body2'>{currentLang.name}</Typography>
         </Box>
       </Button>
@@ -70,7 +89,16 @@ const LanguageSwitcher = () => {
               minWidth: 120,
             }}
           >
-            <span style={{ fontSize: '1.2em' }}>{language.flag}</span>
+            <img
+              src={language.flagUrl}
+              alt={language.name}
+              style={{
+                width: '20px',
+                height: '15px',
+                borderRadius: '2px',
+                objectFit: 'cover',
+              }}
+            />
             <Typography>{language.name}</Typography>
           </MenuItem>
         ))}

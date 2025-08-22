@@ -89,7 +89,7 @@ const PDFManagement = () => {
     },
     {
       onSuccess: () => {
-        toast.success('PDF uploaded successfully!');
+        toast.success(t('pdf.uploadSuccess'));
         queryClient.invalidateQueries(['companyPDFs', selectedCompany?.id]);
         setUploadDialogOpen(false);
         setUploadProgress(0);
@@ -107,7 +107,7 @@ const PDFManagement = () => {
     filename => api.delete(endpoints.removePDF(selectedCompany.id, filename)),
     {
       onSuccess: () => {
-        toast.success('PDF deleted successfully!');
+        toast.success(t('pdf.deleteSuccess'));
         queryClient.invalidateQueries(['companyPDFs', selectedCompany?.id]);
         setDeleteDialogOpen(false);
         setPdfToDelete(null);
@@ -133,7 +133,7 @@ const PDFManagement = () => {
 
   const handleUpload = file => {
     if (!selectedCompany) {
-      toast.error('Please select a company first');
+      toast.error(t('pdf.selectCompanyFirst'));
       return;
     }
 
@@ -173,21 +173,21 @@ const PDFManagement = () => {
         component='h1'
         sx={{ mb: 4, fontWeight: 'bold' }}
       >
-        PDF Document Management
+        {t('pdf.title')}
       </Typography>
 
       {/* Company Selection */}
       <Card sx={{ mb: 4 }}>
         <CardContent>
           <Typography variant='h6' gutterBottom>
-            Select Company
+            {t('pdf.selectCompany')}
           </Typography>
 
           {companiesLoading ? (
             <Box display='flex' justifyContent='center' p={3}>
               <CircularProgress />
               <Typography variant='body2' sx={{ ml: 2, alignSelf: 'center' }}>
-                {t('pdf.loadingCompanies') || 'Loading companies...'}
+                {t('pdf.loadingCompanies')}
               </Typography>
             </Box>
           ) : companies?.length > 0 ? (
@@ -212,7 +212,7 @@ const PDFManagement = () => {
             <Box sx={{ textAlign: 'center', py: 3 }}>
               <Business sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
               <Typography variant='body2' color='textSecondary'>
-                {t('pdf.noCompanies') || 'No companies available'}
+                {t('pdf.noCompanies')}
               </Typography>
             </Box>
           )}
@@ -230,18 +230,18 @@ const PDFManagement = () => {
                 justifyContent='space-between'
                 mb={2}
               >
-                <Typography variant='h6'>Upload PDF Documents</Typography>
+                <Typography variant='h6'>{t('pdf.uploadTitle')}</Typography>
                 <Button
                   variant='contained'
                   startIcon={<Upload />}
                   onClick={() => setUploadDialogOpen(true)}
                 >
-                  Upload PDF
+                  {t('pdf.uploadPDF')}
                 </Button>
               </Box>
 
               <Typography variant='body2' color='textSecondary'>
-                Drag and drop PDF files here or click the upload button above
+                {t('pdf.dragDrop')}
               </Typography>
 
               <Box
@@ -264,12 +264,10 @@ const PDFManagement = () => {
                 <input {...getInputProps()} />
                 <Upload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
                 <Typography variant='h6' gutterBottom>
-                  {isDragActive
-                    ? 'Drop the PDF here'
-                    : 'Drag & drop PDF files here'}
+                  {isDragActive ? t('pdf.dropHere') : t('pdf.dragDrop')}
                 </Typography>
                 <Typography variant='body2' color='textSecondary'>
-                  or click to select files
+                  {t('pdf.orClick')}
                 </Typography>
               </Box>
             </CardContent>
@@ -285,7 +283,7 @@ const PDFManagement = () => {
                 mb={2}
               >
                 <Typography variant='h6'>
-                  Documents for {selectedCompany.name}
+                  {t('pdf.documentsFor', { companyName: selectedCompany.name })}
                 </Typography>
                 <IconButton size='small' onClick={() => refetchPDFs()}>
                   <Refresh />
@@ -316,10 +314,14 @@ const PDFManagement = () => {
                       </ListItemIcon>
                       <ListItemText
                         primary={pdf.filename}
-                        secondary={`Uploaded ${formatDate(pdf.upload_timestamp)} • ${formatFileSize(pdf.file_size)}`}
+                        secondary={`${t('pdf.uploaded')} ${formatDate(pdf.upload_timestamp)} • ${formatFileSize(pdf.file_size)}`}
                       />
                       <Box display='flex' gap={1} alignItems='center'>
-                        <Chip label='Available' color='success' size='small' />
+                        <Chip
+                          label={t('pdf.available')}
+                          color='success'
+                          size='small'
+                        />
                         <IconButton
                           size='small'
                           color='error'
@@ -337,10 +339,10 @@ const PDFManagement = () => {
                     sx={{ fontSize: 64, color: 'grey.400', mb: 2 }}
                   />
                   <Typography variant='h6' color='textSecondary' gutterBottom>
-                    No documents uploaded yet
+                    {t('pdf.noDocuments')}
                   </Typography>
                   <Typography variant='body2' color='textSecondary'>
-                    Start by uploading your first PDF document
+                    {t('pdf.startUpload')}
                   </Typography>
                 </Paper>
               )}
@@ -356,17 +358,17 @@ const PDFManagement = () => {
         maxWidth='sm'
         fullWidth
       >
-        <DialogTitle>Upload PDF Document</DialogTitle>
+        <DialogTitle>{t('pdf.uploadTitle')}</DialogTitle>
         <DialogContent>
           <Typography variant='body2' color='textSecondary' sx={{ mb: 2 }}>
-            Company: <strong>{selectedCompany?.name}</strong>
+            {t('pdf.company')}: <strong>{selectedCompany?.name}</strong>
           </Typography>
 
           {uploadProgress > 0 && (
             <Box sx={{ mb: 2 }}>
               <LinearProgress variant='determinate' value={uploadProgress} />
               <Typography variant='body2' sx={{ mt: 1 }}>
-                Uploading... {uploadProgress}%
+                {t('pdf.uploading')} {uploadProgress}%
               </Typography>
             </Box>
           )}
@@ -388,15 +390,17 @@ const PDFManagement = () => {
             <input {...getInputProps()} />
             <Upload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
             <Typography variant='h6' gutterBottom>
-              Drop PDF file here
+              {t('pdf.dropHere')}
             </Typography>
             <Typography variant='body2' color='textSecondary'>
-              or click to select file
+              {t('pdf.selectFile')}
             </Typography>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setUploadDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setUploadDialogOpen(false)}>
+            {t('common.cancel')}
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -405,26 +409,26 @@ const PDFManagement = () => {
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
       >
-        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogTitle>{t('pdf.deleteConfirmTitle')}</DialogTitle>
         <DialogContent>
           <Typography>
-            {t('pdf.deleteConfirm', { filename: pdfToDelete?.filename }) ||
-              `Are you sure you want to delete "${pdfToDelete?.filename}"?`}
+            {t('pdf.deleteConfirm', { filename: pdfToDelete?.filename })}
           </Typography>
           <Alert severity='warning' sx={{ mt: 2 }}>
-            {t('pdf.deleteWarning') ||
-              'This action cannot be undone. The document will be permanently removed.'}
+            {t('pdf.deleteWarning')}
           </Alert>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>
+            {t('common.cancel')}
+          </Button>
           <Button
             onClick={confirmDelete}
             color='error'
             variant='contained'
             disabled={deleteMutation.isLoading}
           >
-            {deleteMutation.isLoading ? 'Deleting...' : 'Delete'}
+            {deleteMutation.isLoading ? t('pdf.deleting') : t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

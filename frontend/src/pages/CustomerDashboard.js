@@ -9,6 +9,7 @@ import {
   CardContent,
   Chip,
   Button,
+  CircularProgress,
 } from '@mui/material';
 import { Description, Chat, Upload } from '@mui/icons-material';
 import { useQuery } from 'react-query';
@@ -39,6 +40,24 @@ const CustomerDashboard = () => {
     navigate(`/chat?company=${company.id}&type=simple`);
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <Box
+        display='flex'
+        justifyContent='center'
+        alignItems='center'
+        minHeight='400px'
+        flexDirection='column'
+      >
+        <CircularProgress size={60} sx={{ mb: 2 }} />
+        <Typography variant='h6' color='textSecondary'>
+          {t('common.loading')}
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Typography
@@ -46,28 +65,37 @@ const CustomerDashboard = () => {
         component='h1'
         sx={{ mb: 4, fontWeight: 'bold' }}
       >
-        Welcome, {user?.username}!
+        {t('dashboard.welcome')}, {user?.username}!
       </Typography>
 
       {/* Company Selection */}
       <Card sx={{ mb: 4 }}>
         <CardContent>
           <Typography variant='h6' gutterBottom>
-            Select Company
+            {t('pdf.selectCompany')}
           </Typography>
-          <Grid container spacing={2}>
-            {companies?.map(company => (
-              <Grid item key={company.id}>
-                <Button
-                  variant='outlined'
-                  onClick={() => handleCompanySelect(company)}
-                  startIcon={<Description />}
-                >
-                  {company.name}
-                </Button>
-              </Grid>
-            ))}
-          </Grid>
+          {companies?.length > 0 ? (
+            <Grid container spacing={2}>
+              {companies.map(company => (
+                <Grid item key={company.id}>
+                  <Button
+                    variant='outlined'
+                    onClick={() => handleCompanySelect(company)}
+                    startIcon={<Description />}
+                  >
+                    {company.name}
+                  </Button>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 3 }}>
+              <Description sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+              <Typography variant='body2' color='textSecondary'>
+                {t('customerDashboard.noCompanies')}
+              </Typography>
+            </Box>
+          )}
         </CardContent>
       </Card>
 
@@ -77,14 +105,15 @@ const CustomerDashboard = () => {
           <Card
             sx={{ height: '100%', cursor: 'pointer' }}
             onClick={() => handleAskQuestion('simple')}
+            disabled={!companies || companies.length === 0}
           >
             <CardContent sx={{ textAlign: 'center', py: 3 }}>
               <Chat sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
               <Typography variant='h6' gutterBottom>
-                Ask Question
+                {t('qa.askQuestion')}
               </Typography>
               <Typography variant='body2' color='textSecondary'>
-                Get quick answers from your documents
+                {t('customerDashboard.quickAnswers')}
               </Typography>
             </CardContent>
           </Card>
@@ -93,14 +122,15 @@ const CustomerDashboard = () => {
           <Card
             sx={{ height: '100%', cursor: 'pointer' }}
             onClick={() => handleAskQuestion('agent')}
+            disabled={!companies || companies.length === 0}
           >
             <CardContent sx={{ textAlign: 'center', py: 3 }}>
               <Chat sx={{ fontSize: 48, color: 'secondary.main', mb: 2 }} />
               <Typography variant='h6' gutterBottom>
-                AI Agent Chat
+                {t('chat.aiAgentChat')}
               </Typography>
               <Typography variant='body2' color='textSecondary'>
-                Interactive conversation with AI agent
+                {t('customerDashboard.interactiveConversation')}
               </Typography>
             </CardContent>
           </Card>
@@ -110,10 +140,10 @@ const CustomerDashboard = () => {
             <CardContent sx={{ textAlign: 'center', py: 3 }}>
               <Upload sx={{ fontSize: 48, color: 'info.main', mb: 2 }} />
               <Typography variant='h6' gutterBottom>
-                Upload Documents
+                {t('pdf.uploadDocuments')}
               </Typography>
               <Typography variant='body2' color='textSecondary'>
-                Contact admin to add new PDFs
+                {t('customerDashboard.contactAdmin')}
               </Typography>
             </CardContent>
           </Card>
@@ -121,56 +151,59 @@ const CustomerDashboard = () => {
       </Grid>
 
       {/* Company Information */}
-      <Card sx={{ mb: 4 }}>
-        <CardContent>
-          <Typography variant='h6' gutterBottom>
-            Company Information
-          </Typography>
-          <Grid container spacing={3}>
-            {companies?.map(company => (
-              <Grid item xs={12} md={6} key={company.id}>
-                <Card variant='outlined'>
-                  <CardContent>
-                    <Typography variant='h6' gutterBottom>
-                      {company.name}
-                    </Typography>
-                    <Box display='flex' gap={1} mb={1}>
-                      <Chip
-                        label={`PDFs: ${company.pdf_count || 0}`}
-                        color='primary'
-                        size='small'
-                      />
-                      <Chip
-                        label={`QA Logs: ${company.qa_logs_count || 0}`}
-                        color='secondary'
-                        size='small'
-                      />
-                      <Chip
-                        label={`Agent Logs: ${company.agent_logs_count || 0}`}
-                        color='info'
-                        size='small'
-                      />
-                    </Box>
-                    <Typography variant='body2' color='textSecondary'>
-                      Model: {company.model_name} • Temperature:{' '}
-                      {company.temperature}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </CardContent>
-      </Card>
+      {companies && companies.length > 0 && (
+        <Card sx={{ mb: 4 }}>
+          <CardContent>
+            <Typography variant='h6' gutterBottom>
+              {t('customerDashboard.companyInformation')}
+            </Typography>
+            <Grid container spacing={3}>
+              {companies.map(company => (
+                <Grid item xs={12} md={6} key={company.id}>
+                  <Card variant='outlined'>
+                    <CardContent>
+                      <Typography variant='h6' gutterBottom>
+                        {company.name}
+                      </Typography>
+                      <Box display='flex' gap={1} mb={1}>
+                        <Chip
+                          label={`${t('pdf.pdfs')}: ${company.pdf_count || 0}`}
+                          color='primary'
+                          size='small'
+                        />
+                        <Chip
+                          label={`${t('qa.qaLogs')}: ${company.qa_logs_count || 0}`}
+                          color='secondary'
+                          size='small'
+                        />
+                        <Chip
+                          label={`${t('customerDashboard.agentLogs')}: ${company.agent_logs_count || 0}`}
+                          color='info'
+                          size='small'
+                        />
+                      </Box>
+                      <Typography variant='body2' color='textSecondary'>
+                        {t('customerDashboard.model')}: {company.model_name} •{' '}
+                        {t('customerDashboard.temperature')}:{' '}
+                        {company.temperature}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Activity */}
       <Card>
         <CardContent>
           <Typography variant='h6' gutterBottom>
-            Recent Activity
+            {t('dashboard.recentActivity')}
           </Typography>
           <Typography variant='body2' color='textSecondary'>
-            Your recent questions and interactions will appear here
+            {t('customerDashboard.recentActivityDescription')}
           </Typography>
         </CardContent>
       </Card>

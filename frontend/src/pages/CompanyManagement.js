@@ -93,8 +93,8 @@ const CompanyManagement = () => {
       onSuccess: () => {
         toast.success(
           editingCompany
-            ? 'Company updated successfully!'
-            : 'Company created successfully!'
+            ? t('company.updateSuccess')
+            : t('company.createSuccess')
         );
         queryClient.invalidateQueries('companies');
         handleCloseDialog();
@@ -111,7 +111,7 @@ const CompanyManagement = () => {
     companyId => api.delete(`${endpoints.adminCompanies}/${companyId}`),
     {
       onSuccess: () => {
-        toast.success('Company deleted successfully!');
+        toast.success(t('company.deleteSuccess'));
         queryClient.invalidateQueries('companies');
       },
       onError: error => {
@@ -125,19 +125,19 @@ const CompanyManagement = () => {
     const errors = {};
 
     if (!formData.name.trim()) {
-      errors.name = 'Company name is required';
+      errors.name = t('company.nameRequired');
     }
 
     if (!formData.model_name) {
-      errors.model_name = 'Please select an AI model';
+      errors.model_name = t('company.modelRequired');
     }
 
     if (formData.temperature < 0 || formData.temperature > 2) {
-      errors.temperature = 'Temperature must be between 0 and 2';
+      errors.temperature = t('company.temperatureRange');
     }
 
     if (formData.max_tokens < 1 || formData.max_tokens > 4000) {
-      errors.max_tokens = 'Max tokens must be between 1 and 4000';
+      errors.max_tokens = t('company.maxTokensRange');
     }
 
     setFormErrors(errors);
@@ -190,11 +190,7 @@ const CompanyManagement = () => {
   };
 
   const handleDelete = companyId => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete this company? This action cannot be undone.'
-      )
-    ) {
+    if (window.confirm(t('company.deleteConfirm'))) {
       deleteMutation.mutate(companyId);
     }
   };
@@ -222,7 +218,7 @@ const CompanyManagement = () => {
         alignItems='center'
         minHeight='400px'
       >
-        <Typography>Loading companies...</Typography>
+        <Typography>{t('common.loading')}</Typography>
       </Box>
     );
   }
@@ -236,14 +232,14 @@ const CompanyManagement = () => {
         mb={4}
       >
         <Typography variant='h4' component='h1' sx={{ fontWeight: 'bold' }}>
-          Company Management
+          {t('company.title')}
         </Typography>
         <Button
           variant='contained'
           startIcon={<Add />}
           onClick={() => handleOpenDialog()}
         >
-          Add Company
+          {t('company.addCompany')}
         </Button>
       </Box>
 
@@ -252,16 +248,16 @@ const CompanyManagement = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>AI Model</TableCell>
-              <TableCell>Temperature</TableCell>
-              <TableCell>Max Tokens</TableCell>
-              <TableCell>Created</TableCell>
-              <TableCell>Updated</TableCell>
-              <TableCell>Documents</TableCell>
-              <TableCell>Activity Logs</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>{t('common.name')}</TableCell>
+              <TableCell>{t('company.aiModel')}</TableCell>
+              <TableCell>{t('company.temperature')}</TableCell>
+              <TableCell>{t('company.maxTokens')}</TableCell>
+              <TableCell>{t('common.created')}</TableCell>
+              <TableCell>{t('common.updated')}</TableCell>
+              <TableCell>{t('company.documents')}</TableCell>
+              <TableCell>{t('company.activityLogs')}</TableCell>
+              <TableCell>{t('common.status')}</TableCell>
+              <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -319,8 +315,8 @@ const CompanyManagement = () => {
                   <Chip
                     label={
                       getSafeCount(company.pdf_count) > 0
-                        ? 'Active'
-                        : 'No Documents'
+                        ? t('common.active')
+                        : t('company.noDocuments')
                     }
                     color={
                       getSafeCount(company.pdf_count) > 0
@@ -362,7 +358,7 @@ const CompanyManagement = () => {
         fullWidth
       >
         <DialogTitle>
-          {editingCompany ? 'Edit Company' : 'Add New Company'}
+          {editingCompany ? t('company.editCompany') : t('company.addCompany')}
         </DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent>
@@ -370,14 +366,14 @@ const CompanyManagement = () => {
             {modelsLoading && (
               <Alert severity='warning' sx={{ mb: 2 }}>
                 <Warning sx={{ mr: 1 }} />
-                Loading available AI models...
+                {t('company.loadingModels')}
               </Alert>
             )}
 
             {/* Model Loading Error */}
             {!modelsLoading && openaiModels.length === 0 && (
               <Alert severity='error' sx={{ mb: 2 }}>
-                Failed to load AI models. Please refresh the page and try again.
+                {t('company.modelsError')}
               </Alert>
             )}
 
@@ -385,7 +381,7 @@ const CompanyManagement = () => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label='Company Name'
+                  label={t('company.companyName')}
                   value={formData.name}
                   onChange={e => handleInputChange('name', e.target.value)}
                   required
@@ -396,13 +392,13 @@ const CompanyManagement = () => {
               </Grid>
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth required error={!!formErrors.model_name}>
-                  <InputLabel>AI Model *</InputLabel>
+                  <InputLabel>{t('company.aiModel')} *</InputLabel>
                   <Select
                     value={formData.model_name}
                     onChange={e =>
                       handleInputChange('model_name', e.target.value)
                     }
-                    label='AI Model *'
+                    label={`${t('company.aiModel')} *`}
                     disabled={modelsLoading || openaiModels.length === 0}
                   >
                     {openaiModels.map(model => (
@@ -416,7 +412,7 @@ const CompanyManagement = () => {
                           <span>{model.id}</span>
                           {model.recommended && (
                             <Chip
-                              label='Recommended'
+                              label={t('company.recommended')}
                               size='small'
                               color='success'
                             />
@@ -430,16 +426,13 @@ const CompanyManagement = () => {
                       {formErrors.model_name}
                     </FormHelperText>
                   )}
-                  <FormHelperText>
-                    {t('company.modelHelp') ||
-                      'Select the OpenAI model for this company&apos;s AI operations'}
-                  </FormHelperText>
+                  <FormHelperText>{t('company.modelHelp')}</FormHelperText>
                 </FormControl>
               </Grid>
               <Grid item xs={12} md={3}>
                 <TextField
                   fullWidth
-                  label='Temperature'
+                  label={t('company.temperature')}
                   type='number'
                   inputProps={{ min: 0, max: 2, step: 0.1 }}
                   value={formData.temperature}
@@ -449,14 +442,14 @@ const CompanyManagement = () => {
                   required
                   error={!!formErrors.temperature}
                   helperText={
-                    formErrors.temperature || '0.0 = focused, 2.0 = creative'
+                    formErrors.temperature || t('company.temperatureHelp')
                   }
                 />
               </Grid>
               <Grid item xs={12} md={3}>
                 <TextField
                   fullWidth
-                  label='Max Tokens'
+                  label={t('company.maxTokens')}
                   type='number'
                   inputProps={{ min: 1, max: 4000 }}
                   value={formData.max_tokens}
@@ -465,13 +458,15 @@ const CompanyManagement = () => {
                   }
                   required
                   error={!!formErrors.max_tokens}
-                  helperText={formErrors.max_tokens || 'Response length limit'}
+                  helperText={
+                    formErrors.max_tokens || t('company.maxTokensHelp')
+                  }
                 />
               </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleCloseDialog}>{t('common.cancel')}</Button>
             <Button
               type='submit'
               variant='contained'
@@ -482,10 +477,10 @@ const CompanyManagement = () => {
               }
             >
               {companyMutation.isLoading
-                ? 'Saving...'
+                ? t('common.saving')
                 : editingCompany
-                  ? 'Update'
-                  : 'Create'}
+                  ? t('common.update')
+                  : t('common.create')}
             </Button>
           </DialogActions>
         </form>

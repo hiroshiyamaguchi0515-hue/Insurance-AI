@@ -38,7 +38,15 @@
     "healthy": "Healthy",
     "warning": "Warning",
     "error": "Error",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "user": "User",
+    "admin": "Admin",
+    "saving": "Saving...",
+    "found": "found",
+    "company": "Company",
+    "change": "Change",
+    "view": "View",
+    "language": "Language"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -112,7 +120,10 @@
     "active": "Active",
     "recommended": "Recommended",
     "loadingModels": "Loading available AI models...",
-    "modelsError": "Failed to load AI models. Please refresh the page and try again."
+    "modelsError": "Failed to load AI models. Please refresh the page and try again.",
+    "temperatureRange": "Temperature must be between 0 and 2",
+    "maxTokensRange": "Max tokens must be between 1 and 4000",
+    "activityLogs": "Activity Logs"
   },
   "user": {
     "title": "User Management",
@@ -131,8 +142,8 @@
     "title": "PDF Document Management",
     "selectCompany": "Select Company",
     "uploadPDF": "Upload PDF",
-    "uploadTitle": "Upload PDF Document",
-    "dragDrop": "Drag and drop PDF files here",
+    "uploadTitle": "Upload PDF Documents",
+    "dragDrop": "Drag and drop PDF files here or click the upload button above",
     "orClick": "or click to select files",
     "dropHere": "Drop the PDF here",
     "selectFile": "or click to select file",
@@ -149,7 +160,15 @@
     "uploadDate": "Upload date",
     "available": "Available",
     "loadingCompanies": "Loading companies...",
-    "noCompanies": "No companies available"
+    "noCompanies": "No companies available",
+    "company": "Company",
+    "uploaded": "Uploaded",
+    "deleting": "Deleting...",
+    "deleteConfirmTitle": "Confirm Delete",
+    "selectCompanyFirst": "Please select a company first",
+    "documentsFor": "Documents for {{companyName}}",
+    "uploadDocuments": "Upload Documents",
+    "pdfs": "PDFs"
   },
   "qa": {
     "questionLabel": "Your question",
@@ -157,7 +176,18 @@
     "askQuestion": "Ask Question",
     "processing": "Processing...",
     "simpleQA": "Simple QA",
-    "agentQA": "AI Agent Chat"
+    "agentQA": "AI Agent Chat",
+    "title": "QA Logs",
+    "selectCompany": "Select Company",
+    "selectCompanyDescription": "Choose a company to view their QA logs and conversation history",
+    "logs": "Logs",
+    "question": "Question",
+    "answer": "Answer",
+    "noLogs": "No logs found",
+    "noLogsDescription": "No QA logs have been created for this company yet",
+    "clearLogs": "Clear Logs",
+    "clearLogsConfirm": "Are you sure you want to clear all QA logs for this company?",
+    "logDetails": "Log Details"
   },
   "agent": {
     "title": "AI Agent Management",
@@ -221,7 +251,9 @@
     "indexType": "Index Type",
     "autoRebuild": "Auto-rebuild",
     "chunkSize": "Chunk Size",
-    "overlap": "Overlap"
+    "overlap": "Overlap",
+    "notCreated": "Not Created",
+    "never": "Never"
   },
   "systemHealth": {
     "title": "System Health",
@@ -233,6 +265,7 @@
     "database": "Database",
     "aiEmbeddings": "AI Embeddings",
     "openaiApi": "OpenAI API",
+    "vectorStore": "Vector Store",
     "memoryUsage": "Memory Usage",
     "cpuUsage": "CPU Usage",
     "diskUsage": "Disk Usage",
@@ -248,7 +281,23 @@
     "responseTime": "Response Time",
     "autoRecovery": "Auto-recovery",
     "alertSystem": "Alert System",
-    "logging": "Logging"
+    "logging": "Logging",
+    "users": "Users",
+    "companies": "Companies",
+    "documents": "Documents",
+    "qaLogs": "QA Logs",
+    "noInformation": "No information available",
+    "databaseHealthy": "Database connection successful",
+    "databaseError": "Database connection failed",
+    "databaseUnknown": "Database status unknown",
+    "embeddingsHealthy": "Embeddings service working",
+    "embeddingsError": "Embeddings service failed",
+    "embeddingsUnknown": "Embeddings status unknown",
+    "openaiConfigured": "OpenAI API key configured",
+    "openaiHealthy": "OpenAI API working",
+    "openaiError": "OpenAI API failed",
+    "openaiUnknown": "OpenAI API status unknown",
+    "memoryStatus": "System memory status"
   },
   "errors": {
     "general": "Something went wrong. Please try again.",
@@ -265,5 +314,108 @@
     "error": "Error",
     "warning": "Warning",
     "info": "Information"
+  },
+  "chat": {
+    "title": "Chat Conversations",
+    "selectCompany": "Select Company",
+    "documentQA": "Document Q&A",
+    "aiAgentChat": "AI Agent Chat",
+    "newChat": "New Chat",
+    "noMessages": "No messages yet",
+    "noConversations": "No conversations yet",
+    "startNewChat": "Start a new chat to begin asking questions",
+    "messages": "messages",
+    "questionPlaceholder": "Type your question...",
+    "sending": "Sending...",
+    "send": "Send",
+    "selectConversation": "Select a conversation",
+    "chooseConversation": "Choose a conversation from the list or start a new chat",
+    "firstQuestion": "Your first question",
+    "askAnything": "Ask anything about your documents...",
+    "startChat": "Start Chat",
+    "questionSent": "Question sent successfully!",
+    "questionFailed": "Failed to send question",
+    "conversationDeleted": "Conversation deleted successfully!",
+    "deleteFailed": "Failed to delete conversation",
+    "deleteConfirm": "Are you sure you want to delete this conversation?",
+    "yesterday": "Yesterday"
+  },
+  "customerDashboard": {
+    "quickAnswers": "Get quick answers from your documents",
+    "interactiveConversation": "Interactive conversation with AI agent",
+    "contactAdmin": "Contact admin to add new PDFs",
+    "companyInformation": "Company Information",
+    "agentLogs": "Agent Logs",
+    "model": "Model",
+    "temperature": "Temperature",
+    "recentActivityDescription": "Your recent questions and interactions will appear here",
+    "noCompanies": "No companies available"
+  },
+  "landing": {
+    "hero": {
+      "title": "AI-Powered Insurance Assistant",
+      "subtitle": "Get instant answers to your insurance questions with our intelligent AI bot. 24/7 support for policies, claims, and coverage information.",
+      "getStarted": "Get Started",
+      "learnMore": "Learn More"
+    },
+    "features": {
+      "title": "Smart Insurance Solutions",
+      "subtitle": "Everything you need for seamless insurance management and customer support",
+      "documentAnalysis": {
+        "title": "Policy Analysis",
+        "description": "AI-powered analysis of insurance policies, contracts, and coverage documents for quick insights"
+      },
+      "aiAgents": {
+        "title": "Insurance AI Bot",
+        "description": "Intelligent chatbot that understands insurance terminology and provides accurate policy information"
+      },
+      "vectorStore": {
+        "title": "Knowledge Base",
+        "description": "Comprehensive database of insurance policies, regulations, and customer information for instant access"
+      },
+      "security": {
+        "title": "Data Protection",
+        "description": "Bank-level security with encrypted storage and HIPAA-compliant data handling for sensitive information"
+      },
+      "performance": {
+        "title": "Instant Responses",
+        "description": "Sub-second response times for insurance queries, claims status, and policy questions"
+      },
+      "analytics": {
+        "title": "Customer Insights",
+        "description": "Comprehensive analytics on customer interactions, policy inquiries, and support efficiency"
+      }
+    },
+    "benefits": {
+      "title": "Why Choose Our Insurance AI?",
+      "subtitle": "Transform your insurance operations with cutting-edge AI technology designed for the insurance industry",
+      "time": "Reduce customer wait times from hours to seconds with instant AI responses",
+      "accuracy": "99%+ accuracy in insurance policy information and coverage details",
+      "scalability": "Handle thousands of customer inquiries simultaneously with enterprise-grade infrastructure",
+      "cost": "Significantly reduce operational costs while improving customer satisfaction",
+      "security": "HIPAA and SOC 2 compliant security for sensitive insurance data",
+      "integration": "Seamless integration with existing insurance management systems and workflows"
+    },
+    "stats": {
+      "title": "Insurance Platform Statistics",
+      "uptime": "Uptime",
+      "responseTime": "Response Time",
+      "support": "Support",
+      "security": "Security"
+    },
+    "cta": {
+      "title": "Ready to Transform Your Insurance Business?",
+      "subtitle": "Join leading insurance companies already using our AI-powered customer support platform",
+      "button": "Start Your Free Trial"
+    },
+    "footer": {
+      "copyright": "© 2025 Insurance System. All rights reserved. Powered by AI."
+    },
+    "nav": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "about": "About",
+      "login": "Login"
+    }
   }
 }

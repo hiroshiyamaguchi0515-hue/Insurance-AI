@@ -14,7 +14,6 @@ import {
   TableHead,
   TableRow,
   Chip,
-  IconButton,
   LinearProgress,
 } from '@mui/material';
 import {
@@ -27,11 +26,13 @@ import {
   Settings,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useTranslation } from 'react-i18next';
 import { api, endpoints } from '../services/api';
 import toast from 'react-hot-toast';
 
 const AgentManagement = () => {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   // Fetch agents status
   const {
@@ -49,11 +50,11 @@ const AgentManagement = () => {
     companyId => api.post(endpoints.agentReset(companyId)),
     {
       onSuccess: () => {
-        toast.success('Agent reset successfully!');
+        toast.success(t('agent.resetSuccess'));
         queryClient.invalidateQueries('agentsStatus');
       },
       onError: error => {
-        toast.error(error.response?.data?.detail || 'Agent reset failed');
+        toast.error(error.response?.data?.detail || t('agent.resetFailed'));
       },
     }
   );
@@ -63,31 +64,23 @@ const AgentManagement = () => {
     companyId => api.delete(endpoints.forceRemoveAgent(companyId)),
     {
       onSuccess: () => {
-        toast.success('Agent removed successfully!');
+        toast.success(t('agent.removeSuccess'));
         queryClient.invalidateQueries('agentsStatus');
       },
       onError: error => {
-        toast.error(error.response?.data?.detail || 'Agent removal failed');
+        toast.error(error.response?.data?.detail || t('agent.removeFailed'));
       },
     }
   );
 
   const handleResetAgent = companyId => {
-    if (
-      window.confirm(
-        'Are you sure you want to reset this agent? This will clear its memory and conversation history.'
-      )
-    ) {
+    if (window.confirm(t('agent.resetConfirm'))) {
       resetAgentMutation.mutate(companyId);
     }
   };
 
   const handleForceRemove = companyId => {
-    if (
-      window.confirm(
-        'Are you sure you want to force remove this agent? This action cannot be undone.'
-      )
-    ) {
+    if (window.confirm(t('agent.removeConfirm'))) {
       forceRemoveMutation.mutate(companyId);
     }
   };
@@ -100,7 +93,7 @@ const AgentManagement = () => {
         return 'default';
       case 'error':
         return 'error';
-      case 'loading':
+      case 'warning':
         return 'warning';
       default:
         return 'default';
@@ -115,10 +108,10 @@ const AgentManagement = () => {
         return <Stop />;
       case 'error':
         return <Error />;
-      case 'loading':
+      case 'warning':
         return <Warning />;
       default:
-        return <SmartToy />;
+        return <Settings />;
     }
   };
 
@@ -135,6 +128,9 @@ const AgentManagement = () => {
     );
   }
 
+  const stats = agentsStatus?.stats || {};
+  // Ensure agents is always an array, even if API returns an object
+  const agents = Array.isArray(agentsStatus?.agents) ? agentsStatus.agents : [];
   return (
     <Box>
       <Box
@@ -144,266 +140,177 @@ const AgentManagement = () => {
         mb={4}
       >
         <Typography variant='h4' component='h1' sx={{ fontWeight: 'bold' }}>
-          AI Agent Management
+          {t('agent.title')}
         </Typography>
-        <Button
-          variant='outlined'
-          startIcon={<Refresh />}
-          onClick={() => refetch()}
-        >
-          Refresh
+        <Button variant='contained' startIcon={<Refresh />} onClick={refetch}>
+          {t('common.refresh')}
         </Button>
       </Box>
 
-      {/* Agent Statistics */}
+      {/* Statistics Cards */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent>
-              <Box
-                display='flex'
-                alignItems='center'
-                justifyContent='space-between'
-              >
-                <Box>
-                  <Typography
-                    color='textSecondary'
-                    gutterBottom
-                    variant='body2'
-                  >
-                    Total Agents
-                  </Typography>
-                  <Typography
-                    variant='h4'
-                    component='div'
-                    sx={{ fontWeight: 'bold' }}
-                  >
-                    {agentsStatus?.stats?.total_agents || 0}
-                  </Typography>
-                </Box>
-                <SmartToy sx={{ fontSize: 32, color: 'primary.main' }} />
-              </Box>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography color='textSecondary' gutterBottom>
+                {t('agent.totalAgents')}
+              </Typography>
+              <Typography variant='h4' component='div'>
+                {stats.total_agents || 0}
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent>
-              <Box
-                display='flex'
-                alignItems='center'
-                justifyContent='space-between'
-              >
-                <Box>
-                  <Typography
-                    color='textSecondary'
-                    gutterBottom
-                    variant='body2'
-                  >
-                    Active Agents
-                  </Typography>
-                  <Typography
-                    variant='h4'
-                    component='div'
-                    sx={{ fontWeight: 'bold' }}
-                  >
-                    {agentsStatus?.stats?.active_agents || 0}
-                  </Typography>
-                </Box>
-                <CheckCircle sx={{ fontSize: 32, color: 'success.main' }} />
-              </Box>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography color='textSecondary' gutterBottom>
+                {t('agent.activeAgents')}
+              </Typography>
+              <Typography variant='h4' component='div' color='success.main'>
+                {stats.active_agents || 0}
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent>
-              <Box
-                display='flex'
-                alignItems='center'
-                justifyContent='space-between'
-              >
-                <Box>
-                  <Typography
-                    color='textSecondary'
-                    gutterBottom
-                    variant='body2'
-                  >
-                    Inactive Agents
-                  </Typography>
-                  <Typography
-                    variant='h4'
-                    component='div'
-                    sx={{ fontWeight: 'bold' }}
-                  >
-                    {agentsStatus?.stats?.inactive_agents || 0}
-                  </Typography>
-                </Box>
-                <Stop sx={{ fontSize: 32, color: 'default.main' }} />
-              </Box>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography color='textSecondary' gutterBottom>
+                {t('agent.inactiveAgents')}
+              </Typography>
+              <Typography variant='h4' component='div' color='textSecondary'>
+                {stats.inactive_agents || 0}
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent>
-              <Box
-                display='flex'
-                alignItems='center'
-                justifyContent='space-between'
-              >
-                <Box>
-                  <Typography
-                    color='textSecondary'
-                    gutterBottom
-                    variant='body2'
-                  >
-                    Error Agents
-                  </Typography>
-                  <Typography
-                    variant='h4'
-                    component='div'
-                    sx={{ fontWeight: 'bold' }}
-                  >
-                    {agentsStatus?.stats?.error_agents || 0}
-                  </Typography>
-                </Box>
-                <Error sx={{ fontSize: 32, color: 'error.main' }} />
-              </Box>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography color='textSecondary' gutterBottom>
+                {t('agent.errorAgents')}
+              </Typography>
+              <Typography variant='h4' component='div' color='error.main'>
+                {stats.error_agents || 0}
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
       {/* Agents Table */}
-      <Card>
-        <CardContent>
-          <Typography variant='h6' gutterBottom>
-            Agent Status
-          </Typography>
-
-          {agentsStatus?.agents?.length > 0 ? (
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Company</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Model</TableCell>
-                    <TableCell>Created</TableCell>
-                    <TableCell>Last Activity</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {agentsStatus.agents.map(agent => (
-                    <TableRow key={agent.company_id}>
-                      <TableCell>
-                        <Box display='flex' alignItems='center'>
-                          <SmartToy sx={{ mr: 1, color: 'primary.main' }} />
-                          <Typography
-                            variant='body1'
-                            sx={{ fontWeight: 'medium' }}
-                          >
-                            {agent.company_name}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          icon={getAgentStatusIcon(agent.status)}
-                          label={agent.status}
-                          color={getAgentStatusColor(agent.status)}
-                          size='small'
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={agent.model_name || 'N/A'}
+      <Paper sx={{ p: 2 }}>
+        <Typography variant='h6' gutterBottom>
+          {t('agent.agentStatus')}
+        </Typography>
+        {agents.length === 0 ? (
+          <Box textAlign='center' py={4}>
+            <SmartToy sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+            <Typography variant='h6' color='text.secondary' gutterBottom>
+              {t('agent.noAgents')}
+            </Typography>
+            <Typography variant='body2' color='text.secondary'>
+              {t('agent.agentsInfo')}
+            </Typography>
+          </Box>
+        ) : (
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t('agent.company')}</TableCell>
+                  <TableCell>{t('agent.status')}</TableCell>
+                  <TableCell>{t('agent.model')}</TableCell>
+                  <TableCell>{t('agent.created')}</TableCell>
+                  <TableCell>{t('agent.lastActivity')}</TableCell>
+                  <TableCell>{t('common.actions')}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {agents.map(agent => (
+                  <TableRow key={agent.company_id}>
+                    <TableCell>
+                      <Typography variant='body1' sx={{ fontWeight: 'medium' }}>
+                        {agent.company_name}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={getAgentStatusIcon(agent.status)}
+                        label={agent.status}
+                        color={getAgentStatusColor(agent.status)}
+                        size='small'
+                      />
+                    </TableCell>
+                    <TableCell>{agent.model_name || 'N/A'}</TableCell>
+                    <TableCell>
+                      {agent.created_at
+                        ? new Date(agent.created_at).toLocaleDateString()
+                        : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {agent.last_activity
+                        ? new Date(agent.last_activity).toLocaleDateString()
+                        : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <Box display='flex' gap={1}>
+                        <Button
                           size='small'
                           variant='outlined'
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {new Date(agent.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {agent.last_activity
-                          ? new Date(agent.last_activity).toLocaleDateString()
-                          : 'Never'}
-                      </TableCell>
-                      <TableCell>
-                        <Box display='flex' gap={1}>
-                          <IconButton
-                            size='small'
-                            color='primary'
-                            onClick={() => handleResetAgent(agent.company_id)}
-                            disabled={resetAgentMutation.isLoading}
-                          >
-                            <Settings />
-                          </IconButton>
-                          <IconButton
-                            size='small'
-                            color='error'
-                            onClick={() => handleForceRemove(agent.company_id)}
-                            disabled={forceRemoveMutation.isLoading}
-                          >
-                            <Stop />
-                          </IconButton>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <SmartToy sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
-              <Typography variant='h6' color='textSecondary' gutterBottom>
-                No agents found
-              </Typography>
-              <Typography variant='body2' color='textSecondary'>
-                Agents will appear here once companies are created with
-                documents
-              </Typography>
-            </Paper>
-          )}
-        </CardContent>
-      </Card>
+                          onClick={() => handleResetAgent(agent.company_id)}
+                          disabled={resetAgentMutation.isLoading}
+                        >
+                          {t('agent.resetAgent')}
+                        </Button>
+                        <Button
+                          size='small'
+                          variant='outlined'
+                          color='error'
+                          onClick={() => handleForceRemove(agent.company_id)}
+                          disabled={forceRemoveMutation.isLoading}
+                        >
+                          {t('agent.forceRemove')}
+                        </Button>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Paper>
 
       {/* System Information */}
-      <Card sx={{ mt: 4 }}>
-        <CardContent>
-          <Typography variant='h6' gutterBottom>
-            System Information
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Typography variant='body2' color='textSecondary'>
-                <strong>Agent Framework:</strong> LangChain
-              </Typography>
-              <Typography variant='body2' color='textSecondary'>
-                <strong>Memory Type:</strong> Conversation Buffer
-              </Typography>
-              <Typography variant='body2' color='textSecondary'>
-                <strong>Tool Integration:</strong> PDF Q&A, Vector Store
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Typography variant='body2' color='textSecondary'>
-                <strong>Auto-creation:</strong> Enabled
-              </Typography>
-              <Typography variant='body2' color='textSecondary'>
-                <strong>Auto-update:</strong> On vector store changes
-              </Typography>
-              <Typography variant='body2' color='textSecondary'>
-                <strong>Health Check:</strong> Every 10 seconds
-              </Typography>
-            </Grid>
+      <Paper sx={{ p: 2, mt: 3 }}>
+        <Typography variant='h6' gutterBottom>
+          {t('agent.systemInfo')}
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <Typography variant='body2' color='textSecondary'>
+              <strong>{t('agent.agentFramework')}:</strong> LangChain
+            </Typography>
           </Grid>
-        </CardContent>
-      </Card>
+          <Grid item xs={12} md={6}>
+            <Typography variant='body2' color='textSecondary'>
+              <strong>{t('agent.memoryType')}:</strong> Conversation Buffer
+            </Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography variant='body2' color='textSecondary'>
+              <strong>{t('agent.toolIntegration')}:</strong> OpenAI Functions
+            </Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography variant='body2' color='textSecondary'>
+              <strong>{t('agent.autoCreation')}:</strong> Enabled
+            </Typography>
+          </Grid>
+        </Grid>
+      </Paper>
     </Box>
   );
 };

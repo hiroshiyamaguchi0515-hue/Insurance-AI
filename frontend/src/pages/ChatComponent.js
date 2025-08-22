@@ -33,7 +33,7 @@ import {
   Business,
   Refresh,
 } from '@mui/icons-material';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation } from 'react-query';
 import { api, endpoints } from '../services/api';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -42,7 +42,6 @@ const ChatComponent = () => {
   const { user } = useSelector(state => state.auth);
   const navigate = useNavigate();
   const location = useLocation();
-  const queryClient = useQueryClient();
   const { t } = useTranslation();
 
   // Get company from URL params
@@ -92,8 +91,8 @@ const ChatComponent = () => {
   const askQuestionMutation = useMutation(
     data => api.post(endpoints.chatAsk, data),
     {
-      onSuccess: response => {
-        toast.success('Question sent successfully!');
+      onSuccess: () => {
+        toast.success(t('chat.questionSent'));
         setNewQuestion('');
         refetchConversations();
         if (selectedConversation) {
@@ -101,7 +100,7 @@ const ChatComponent = () => {
         }
       },
       onError: error => {
-        toast.error(error.response?.data?.detail || 'Failed to send question');
+        toast.error(error.response?.data?.detail || t('chat.questionFailed'));
       },
     }
   );
@@ -111,14 +110,12 @@ const ChatComponent = () => {
     conversationId => api.delete(endpoints.chatConversation(conversationId)),
     {
       onSuccess: () => {
-        toast.success('Conversation deleted successfully!');
+        toast.success(t('chat.conversationDeleted'));
         setSelectedConversation(null);
         refetchConversations();
       },
       onError: error => {
-        toast.error(
-          error.response?.data?.detail || 'Failed to delete conversation'
-        );
+        toast.error(error.response?.data?.detail || t('chat.deleteFailed'));
       },
     }
   );
@@ -154,7 +151,7 @@ const ChatComponent = () => {
   };
 
   const handleDeleteConversation = conversationId => {
-    if (window.confirm('Are you sure you want to delete this conversation?')) {
+    if (window.confirm(t('chat.deleteConfirm'))) {
       deleteConversationMutation.mutate(conversationId);
     }
   };
@@ -174,7 +171,7 @@ const ChatComponent = () => {
         minute: '2-digit',
       });
     } else if (diffInHours < 48) {
-      return 'Yesterday';
+      return t('chat.yesterday');
     } else {
       return date.toLocaleDateString();
     }
@@ -214,14 +211,14 @@ const ChatComponent = () => {
             <ArrowBack />
           </IconButton>
           <Typography variant='h4' component='h1' sx={{ fontWeight: 'bold' }}>
-            Chat Conversations
+            {t('chat.title')}
           </Typography>
         </Box>
 
         <Card sx={{ mb: 4 }}>
           <CardContent>
             <Typography variant='h6' gutterBottom>
-              Select Company
+              {t('chat.selectCompany')}
             </Typography>
             <Grid container spacing={2}>
               {companies?.map(company => (
@@ -276,7 +273,9 @@ const ChatComponent = () => {
           </Box>
 
           <Typography variant='body2' color='text.secondary' mb={2}>
-            {chatType === 'simple' ? 'Document Q&A' : 'AI Agent Chat'}
+            {chatType === 'simple'
+              ? t('chat.documentQA')
+              : t('chat.aiAgentChat')}
           </Typography>
 
           <Button
@@ -285,7 +284,7 @@ const ChatComponent = () => {
             startIcon={<Add />}
             onClick={handleNewChat}
           >
-            New Chat
+            {t('chat.newChat')}
           </Button>
         </Box>
 
@@ -293,7 +292,7 @@ const ChatComponent = () => {
         <Box sx={{ flex: 1, overflow: 'auto' }}>
           {conversationsLoading ? (
             <Box sx={{ p: 2, textAlign: 'center' }}>
-              <Typography>Loading conversations...</Typography>
+              <Typography>{t('common.loading')}</Typography>
             </Box>
           ) : conversations?.length > 0 ? (
             <List>
@@ -334,7 +333,7 @@ const ChatComponent = () => {
                       secondary={
                         <Box>
                           <Typography variant='caption' display='block'>
-                            {conversation.last_message || 'No messages yet'}
+                            {conversation.last_message || t('chat.noMessages')}
                           </Typography>
                           <Box
                             display='flex'
@@ -380,11 +379,9 @@ const ChatComponent = () => {
             <Box sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
               <Chat sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
               <Typography variant='h6' gutterBottom>
-                No conversations yet
+                {t('chat.noConversations')}
               </Typography>
-              <Typography variant='body2'>
-                Start a new chat to begin asking questions
-              </Typography>
+              <Typography variant='body2'>{t('chat.startNewChat')}</Typography>
             </Box>
           )}
         </Box>
@@ -400,7 +397,7 @@ const ChatComponent = () => {
                 {selectedConversation.title}
               </Typography>
               <Typography variant='body2' color='text.secondary'>
-                {selectedConversation.message_count} messages •{' '}
+                {selectedConversation.message_count} {t('chat.messages')} •{' '}
                 {formatTimestamp(selectedConversation.updated_at)}
               </Typography>
             </Box>
@@ -502,7 +499,7 @@ const ChatComponent = () => {
               <Box display='flex' gap={2}>
                 <TextField
                   fullWidth
-                  placeholder='Type your question...'
+                  placeholder={t('chat.questionPlaceholder')}
                   value={newQuestion}
                   onChange={e => setNewQuestion(e.target.value)}
                   onKeyPress={e => {
@@ -522,7 +519,9 @@ const ChatComponent = () => {
                   }
                   sx={{ minWidth: 100 }}
                 >
-                  {askQuestionMutation.isLoading ? 'Sending...' : 'Send'}
+                  {askQuestionMutation.isLoading
+                    ? t('chat.sending')
+                    : t('chat.send')}
                 </Button>
               </Box>
             </Box>
@@ -538,10 +537,10 @@ const ChatComponent = () => {
           >
             <Chat sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
             <Typography variant='h6' gutterBottom>
-              Select a conversation
+              {t('chat.selectConversation')}
             </Typography>
             <Typography variant='body2' textAlign='center'>
-              Choose a conversation from the list or start a new chat
+              {t('chat.chooseConversation')}
             </Typography>
           </Box>
         )}
@@ -554,22 +553,24 @@ const ChatComponent = () => {
         maxWidth='sm'
         fullWidth
       >
-        <DialogTitle>Start New Chat</DialogTitle>
+        <DialogTitle>{t('chat.startNewChat')}</DialogTitle>
         <DialogContent>
           <TextField
             margin='dense'
-            label='Your first question'
+            label={t('chat.firstQuestion')}
             fullWidth
             multiline
             rows={4}
             value={newQuestion}
             onChange={e => setNewQuestion(e.target.value)}
-            placeholder='Ask anything about your documents...'
+            placeholder={t('chat.askAnything')}
             sx={{ mt: 2 }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setChatDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setChatDialogOpen(false)}>
+            {t('common.cancel')}
+          </Button>
           <Button
             onClick={() => {
               handleAskQuestion();
@@ -578,7 +579,7 @@ const ChatComponent = () => {
             variant='contained'
             disabled={!newQuestion.trim()}
           >
-            Start Chat
+            {t('chat.startChat')}
           </Button>
         </DialogActions>
       </Dialog>

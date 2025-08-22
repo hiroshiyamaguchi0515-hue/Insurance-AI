@@ -2,6 +2,7 @@ import React, { useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import Layout from './components/Layout';
+import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import CustomerDashboard from './pages/CustomerDashboard';
@@ -14,6 +15,7 @@ import SystemHealth from './pages/SystemHealth';
 import QALogs from './pages/QALogs';
 import ChatComponent from './pages/ChatComponent';
 import { getUserInfo } from './store/slices/authSlice';
+import { useLanguagePersistence } from './hooks/useLanguagePersistence';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, isAuthenticated } = useSelector(state => state.auth);
@@ -32,6 +34,9 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 const AppRoutes = () => {
   const { user, isAuthenticated, token } = useSelector(state => state.auth);
   const dispatch = useDispatch();
+
+  // Initialize language persistence
+  useLanguagePersistence();
 
   // Stabilize the getUserInfo dispatch to prevent unnecessary re-runs
   const handleGetUserInfo = useCallback(() => {
@@ -57,8 +62,9 @@ const AppRoutes = () => {
   if (!isAuthenticated || !user) {
     return (
       <Routes>
+        <Route path='/' element={<LandingPage />} />
         <Route path='/login' element={<Login />} />
-        <Route path='*' element={<Navigate to='/login' replace />} />
+        <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
     );
   }

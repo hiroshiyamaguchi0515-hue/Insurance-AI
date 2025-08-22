@@ -50,14 +50,14 @@ const VectorStoreManagement = () => {
     companyId => api.post(endpoints.rebuildVectorStore(companyId)),
     {
       onSuccess: () => {
-        toast.success('Vector store rebuild started successfully!');
+        toast.success(t('vectorStore.rebuildSuccess'));
         queryClient.invalidateQueries('companies');
         setRebuildDialogOpen(false);
         setSelectedCompany(null);
       },
       onError: error => {
         toast.error(
-          error.response?.data?.detail || 'Vector store rebuild failed'
+          error.response?.data?.detail || t('vectorStore.rebuildFailed')
         );
       },
     }
@@ -79,13 +79,13 @@ const VectorStoreManagement = () => {
       return {
         status: 'no-documents',
         color: 'default',
-        label: 'No Documents',
+        label: t('company.noDocuments'),
       };
     }
 
     // This would typically come from a vector store status API
     // For now, we'll assume it's healthy if there are documents
-    return { status: 'healthy', color: 'success', label: 'Healthy' };
+    return { status: 'healthy', color: 'success', label: t('common.healthy') };
   };
 
   const getStatusIcon = status => {
@@ -111,7 +111,7 @@ const VectorStoreManagement = () => {
         alignItems='center'
         minHeight='400px'
       >
-        {/* LinearProgress sx={{ width: '100%' }} /> */}
+        <Typography>{t('common.loading')}</Typography>
       </Box>
     );
   }
@@ -123,7 +123,7 @@ const VectorStoreManagement = () => {
         component='h1'
         sx={{ mb: 4, fontWeight: 'bold' }}
       >
-        Vector Store Management
+        {t('vectorStore.title')}
       </Typography>
 
       {/* Vector Store Statistics */}
@@ -142,7 +142,7 @@ const VectorStoreManagement = () => {
                     gutterBottom
                     variant='body2'
                   >
-                    Total Companies
+                    {t('vectorStore.totalCompanies')}
                   </Typography>
                   <Typography
                     variant='h4'
@@ -171,7 +171,7 @@ const VectorStoreManagement = () => {
                     gutterBottom
                     variant='body2'
                   >
-                    Active Vector Stores
+                    {t('vectorStore.activeVectorStores')}
                   </Typography>
                   <Typography
                     variant='h4'
@@ -200,7 +200,7 @@ const VectorStoreManagement = () => {
                     gutterBottom
                     variant='body2'
                   >
-                    Total Documents
+                    {t('vectorStore.totalDocuments')}
                   </Typography>
                   <Typography
                     variant='h4'
@@ -232,7 +232,7 @@ const VectorStoreManagement = () => {
                     gutterBottom
                     variant='body2'
                   >
-                    Storage Type
+                    {t('vectorStore.storageType')}
                   </Typography>
                   <Typography
                     variant='h6'
@@ -253,7 +253,7 @@ const VectorStoreManagement = () => {
       <Card>
         <CardContent>
           <Typography variant='h6' gutterBottom>
-            Vector Store Status
+            {t('vectorStore.vectorStoreStatus')}
           </Typography>
 
           {companies?.length > 0 ? (
@@ -261,12 +261,12 @@ const VectorStoreManagement = () => {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Company</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Documents</TableCell>
-                    <TableCell>Vector Store Size</TableCell>
-                    <TableCell>Last Updated</TableCell>
-                    <TableCell>Actions</TableCell>
+                    <TableCell>{t('vectorStore.company')}</TableCell>
+                    <TableCell>{t('common.status')}</TableCell>
+                    <TableCell>{t('company.documents')}</TableCell>
+                    <TableCell>{t('vectorStore.vectorStoreSize')}</TableCell>
+                    <TableCell>{t('vectorStore.lastUpdated')}</TableCell>
+                    <TableCell>{t('common.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -300,7 +300,9 @@ const VectorStoreManagement = () => {
                         </TableCell>
                         <TableCell>
                           <Typography variant='body2'>
-                            {company.pdf_count > 0 ? 'Active' : 'Not Created'}
+                            {company.pdf_count > 0
+                              ? t('common.active')
+                              : t('vectorStore.notCreated')}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -309,7 +311,7 @@ const VectorStoreManagement = () => {
                               ? new Date(
                                   company.updated_at
                                 ).toLocaleDateString()
-                              : 'Never'}
+                              : t('vectorStore.never')}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -323,7 +325,7 @@ const VectorStoreManagement = () => {
                               company.pdf_count === 0
                             }
                           >
-                            Rebuild
+                            {t('vectorStore.rebuild')}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -336,10 +338,10 @@ const VectorStoreManagement = () => {
             <Paper sx={{ p: 4, textAlign: 'center' }}>
               <Storage sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
               <Typography variant='h6' color='textSecondary' gutterBottom>
-                No companies found
+                {t('vectorStore.noCompanies')}
               </Typography>
               <Typography variant='body2' color='textSecondary'>
-                Vector stores will appear here once companies are created
+                {t('vectorStore.companiesInfo')}
               </Typography>
             </Paper>
           )}
@@ -350,31 +352,33 @@ const VectorStoreManagement = () => {
       <Card sx={{ mt: 4 }}>
         <CardContent>
           <Typography variant='h6' gutterBottom>
-            Vector Store Information
+            {t('vectorStore.systemInfo')}
           </Typography>
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
               <Typography variant='body2' color='textSecondary'>
-                <strong>Storage Engine:</strong> FAISS (Facebook AI Similarity
-                Search)
+                <strong>{t('vectorStore.storageEngine')}:</strong> FAISS
+                (Facebook AI Similarity Search)
               </Typography>
               <Typography variant='body2' color='textSecondary'>
-                <strong>Embedding Model:</strong> OpenAI text-embedding-ada-002
+                <strong>{t('vectorStore.embeddingModel')}:</strong> OpenAI
+                text-embedding-ada-002
               </Typography>
               <Typography variant='body2' color='textSecondary'>
-                <strong>Index Type:</strong> HNSW (Hierarchical Navigable Small
-                World)
+                <strong>{t('vectorStore.indexType')}:</strong> HNSW
+                (Hierarchical Navigable Small World)
               </Typography>
             </Grid>
             <Grid item xs={12} md={6}>
               <Typography variant='body2' color='textSecondary'>
-                <strong>Auto-rebuild:</strong> On document changes
+                <strong>{t('vectorStore.autoRebuild')}:</strong> On document
+                changes
               </Typography>
               <Typography variant='body2' color='textSecondary'>
-                <strong>Chunk Size:</strong> 1000 characters
+                <strong>{t('vectorStore.chunkSize')}:</strong> 1000 characters
               </Typography>
               <Typography variant='body2' color='textSecondary'>
-                <strong>Overlap:</strong> 200 characters
+                <strong>{t('vectorStore.overlap')}:</strong> 200 characters
               </Typography>
             </Grid>
           </Grid>
@@ -386,40 +390,27 @@ const VectorStoreManagement = () => {
         open={rebuildDialogOpen}
         onClose={() => setRebuildDialogOpen(false)}
       >
-        <DialogTitle>
-          {t('vectorStore.rebuildTitle') || 'Confirm Vector Store Rebuild'}
-        </DialogTitle>
+        <DialogTitle>{t('vectorStore.rebuildTitle')}</DialogTitle>
         <DialogContent>
           <Typography>
             {t('vectorStore.rebuildConfirm', {
               companyName: selectedCompany?.name,
-            }) ||
-              `Are you sure you want to rebuild the vector store for "${selectedCompany?.name}"?`}
+            })}
           </Typography>
           <Alert severity='warning' sx={{ mt: 2 }}>
-            {t('vectorStore.rebuildWarning') || 'This will:'}
+            {t('vectorStore.rebuildWarning')}
             <ul>
-              <li>
-                {t('vectorStore.rebuildWarning1') ||
-                  'Process all PDF documents again'}
-              </li>
-              <li>
-                {t('vectorStore.rebuildWarning2') ||
-                  'Recreate embeddings and index'}
-              </li>
-              <li>
-                {t('vectorStore.rebuildWarning3') ||
-                  'Take some time depending on document count'}
-              </li>
-              <li>
-                {t('vectorStore.rebuildWarning4') ||
-                  'Update the AI agent&apos;s knowledge base'}
-              </li>
+              <li>{t('vectorStore.rebuildWarning1')}</li>
+              <li>{t('vectorStore.rebuildWarning2')}</li>
+              <li>{t('vectorStore.rebuildWarning3')}</li>
+              <li>{t('vectorStore.rebuildWarning4')}</li>
             </ul>
           </Alert>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRebuildDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setRebuildDialogOpen(false)}>
+            {t('common.cancel')}
+          </Button>
           <Button
             onClick={confirmRebuild}
             color='primary'
@@ -428,8 +419,8 @@ const VectorStoreManagement = () => {
             startIcon={<Build />}
           >
             {rebuildMutation.isLoading
-              ? 'Rebuilding...'
-              : 'Rebuild Vector Store'}
+              ? t('vectorStore.rebuilding')
+              : t('vectorStore.rebuildVectorStore')}
           </Button>
         </DialogActions>
       </Dialog>

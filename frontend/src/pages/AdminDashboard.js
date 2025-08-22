@@ -7,8 +7,8 @@ import {
   Typography,
   IconButton,
   Chip,
-  LinearProgress,
   Paper,
+  CircularProgress,
 } from '@mui/material';
 import {
   Business,
@@ -22,6 +22,7 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import { useQuery } from 'react-query';
+import { useTranslation } from 'react-i18next';
 import { api, endpoints } from '../services/api';
 
 const StatCard = ({ title, value, icon, color, subtitle, trend }) => (
@@ -98,30 +99,19 @@ const SystemStatusCard = ({ title, status, details, icon, color }) => (
       </Box>
 
       <Box display='flex' alignItems='center' mb={1}>
-        <Chip
-          label={status}
-          color={
-            status === 'healthy' || status === 'configured'
-              ? 'success'
-              : status === 'warning'
-                ? 'warning'
-                : 'error'
-          }
-          size='small'
-          sx={{ mr: 1 }}
-        />
-      </Box>
-
-      {details && (
+        <Chip label={status} color={color} size='small' sx={{ mr: 2 }} />
         <Typography variant='body2' color='textSecondary'>
           {details}
         </Typography>
-      )}
+      </Box>
     </CardContent>
   </Card>
 );
 
 const AdminDashboard = () => {
+  const { t } = useTranslation();
+
+  // Fetch dashboard data using existing endpoints
   const { data: companies, isLoading: companiesLoading } = useQuery(
     'companies',
     () => api.get(endpoints.adminCompanies).then(res => res.data),
@@ -134,23 +124,11 @@ const AdminDashboard = () => {
     { refetchInterval: 15000 }
   );
 
-  const { data: systemHealth, isLoading: healthLoading } = useQuery(
-    'systemHealth',
+  const { data: systemStatus, isLoading: healthLoading } = useQuery(
+    'systemStatus',
     () => api.get(endpoints.health).then(res => res.data),
     { refetchInterval: 10000 }
   );
-
-  // Debug logging to help identify data structure issues
-  React.useEffect(() => {
-    if (systemHealth) {
-      console.log('AdminDashboard - System Health Data:', systemHealth);
-      console.log('AdminDashboard - Services:', systemHealth.services);
-      console.log(
-        'AdminDashboard - Database Service:',
-        systemHealth.services?.database
-      );
-    }
-  }, [systemHealth]);
 
   // Helper function to safely extract status from service objects
   const getServiceStatus = service => {
@@ -170,62 +148,117 @@ const AdminDashboard = () => {
     return 0;
   };
 
+  // Helper function to get translated status message
+  const getTranslatedStatusMessage = (service, status) => {
+    if (!service || !status) return t('systemHealth.noInformation');
+
+    const statusKey = status.toLowerCase();
+
+    // Map backend status to translation keys
+    switch (service) {
+      case 'database':
+        if (statusKey === 'healthy') return t('systemHealth.databaseHealthy');
+        if (statusKey === 'error') return t('systemHealth.databaseError');
+        return t('systemHealth.databaseUnknown');
+
+      case 'embeddings':
+        if (statusKey === 'healthy') return t('systemHealth.embeddingsHealthy');
+        if (statusKey === 'error') return t('systemHealth.embeddingsError');
+        return t('systemHealth.embeddingsUnknown');
+
+      case 'openai_api':
+        if (statusKey === 'configured')
+          return t('systemHealth.openaiConfigured');
+        if (statusKey === 'healthy') return t('systemHealth.openaiHealthy');
+        if (statusKey === 'error') return t('systemHealth.openaiError');
+        return t('systemHealth.openaiUnknown');
+
+      default:
+        return t('systemHealth.noInformation');
+    }
+  };
+
   const stats = [
     {
-      title: 'Total Companies',
+      title: t('dashboard.totalCompanies'),
       value: companies?.length || 0,
-      icon: <Business sx={{ color: 'primary.main', fontSize: 32 }} />,
+      icon: <Business />,
       color: 'primary',
-      trend: 12,
+      trend: 0,
     },
     {
-      title: 'Active Users',
-      value: '24',
-      icon: <People sx={{ color: 'success.main', fontSize: 32 }} />,
+      title: t('dashboard.activeUsers'),
+      value: '0', // This would come from a users endpoint
+      icon: <People />,
       color: 'success',
-      trend: 8,
+      trend: 0,
     },
     {
-      title: 'PDF Documents',
+      title: t('dashboard.totalDocuments'),
       value:
         companies?.reduce(
           (acc, company) => acc + getSafeNumber(company.pdf_count),
           0
         ) || 0,
-      icon: <Description sx={{ color: 'info.main', fontSize: 32 }} />,
+      icon: <Description />,
       color: 'info',
-      trend: 15,
+      trend: 0,
     },
     {
-      title: 'AI Agents',
+      title: t('dashboard.aiAgents'),
       value: getSafeNumber(agentsStatus?.stats?.total_agents),
-      icon: <SmartToy sx={{ color: 'secondary.main', fontSize: 32 }} />,
-      color: 'secondary',
-      trend: 5,
+      icon: <SmartToy />,
+      color: 'warning',
+      trend: 0,
     },
   ];
 
   const systemStatuses = [
     {
-      title: 'Database',
-      status: getServiceStatus(systemHealth?.services?.database),
-      details: 'SQLite database connection',
-      icon: <Storage sx={{ color: 'primary.main' }} />,
-      color: 'primary',
+      title: t('systemHealth.database'),
+      status: getServiceStatus(systemStatus?.services?.database),
+      details: getTranslatedStatusMessage(
+        'database',
+        getServiceStatus(systemStatus?.services?.database)
+      ),
+      icon: <Storage />,
+      color:
+        getServiceStatus(systemStatus?.services?.database) === 'healthy'
+          ? 'success'
+          : 'error',
     },
     {
-      title: 'AI Embeddings',
-      status: getServiceStatus(systemHealth?.services?.embeddings),
-      details: 'OpenAI embeddings service',
-      icon: <SmartToy sx={{ color: 'secondary.main' }} />,
-      color: 'secondary',
+      title: t('systemHealth.aiEmbeddings'),
+      status: getServiceStatus(systemStatus?.services?.embeddings),
+      details: getTranslatedStatusMessage(
+        'embeddings',
+        getServiceStatus(systemStatus?.services?.embeddings)
+      ),
+      icon: <SmartToy />,
+      color:
+        getServiceStatus(systemStatus?.services?.embeddings) === 'healthy'
+          ? 'success'
+          : 'error',
     },
     {
-      title: 'OpenAI API',
-      status: getServiceStatus(systemHealth?.services?.openai_api),
-      details: 'OpenAI API connectivity',
-      icon: <HealthAndSafety sx={{ color: 'success.main' }} />,
-      color: 'success',
+      title: t('systemHealth.openaiApi'),
+      status: getServiceStatus(systemStatus?.services?.openai_api),
+      details: getTranslatedStatusMessage(
+        'openai_api',
+        getServiceStatus(systemStatus?.services?.openai_api)
+      ),
+      icon: <HealthAndSafety />,
+      color:
+        getServiceStatus(systemStatus?.services?.openai_api) === 'healthy'
+          ? 'success'
+          : 'error',
+    },
+    {
+      title: t('systemHealth.memoryUsage'),
+      status: systemStatus?.system?.memory_usage || 'Unknown',
+      details: t('systemHealth.memoryStatus'),
+      icon: <Storage />,
+      color: 'info',
     },
   ];
 
@@ -236,8 +269,12 @@ const AdminDashboard = () => {
         justifyContent='center'
         alignItems='center'
         minHeight='400px'
+        flexDirection='column'
       >
-        <LinearProgress sx={{ width: '100%' }} />
+        <CircularProgress size={60} sx={{ mb: 2 }} />
+        <Typography variant='h6' color='textSecondary'>
+          {t('common.loading')}
+        </Typography>
       </Box>
     );
   }
@@ -251,14 +288,14 @@ const AdminDashboard = () => {
         mb={4}
       >
         <Typography variant='h4' component='h1' sx={{ fontWeight: 'bold' }}>
-          Admin Dashboard
+          {t('dashboard.title')}
         </Typography>
-        <IconButton color='primary' size='large'>
+        <IconButton onClick={() => window.location.reload()} color='primary'>
           <Refresh />
         </IconButton>
       </Box>
 
-      {/* Statistics Cards */}
+      {/* Statistics Grid */}
       <Grid container spacing={3} mb={4}>
         {stats.map((stat, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
@@ -268,49 +305,28 @@ const AdminDashboard = () => {
       </Grid>
 
       {/* System Status */}
-      <Typography
-        variant='h5'
-        component='h2'
-        sx={{ mb: 3, fontWeight: 'bold' }}
-      >
-        System Status
+      <Typography variant='h5' component='h2' mb={3}>
+        {t('dashboard.systemStatus')}
       </Typography>
-      <Grid container spacing={3} mb={4}>
+      <Grid container spacing={3}>
         {systemStatuses.map((status, index) => (
-          <Grid item xs={12} md={4} key={index}>
+          <Grid item xs={12} md={6} key={index}>
             <SystemStatusCard {...status} />
           </Grid>
         ))}
       </Grid>
 
       {/* Recent Activity */}
-      <Typography
-        variant='h5'
-        component='h2'
-        sx={{ mb: 3, fontWeight: 'bold' }}
-      >
-        Recent Activity
-      </Typography>
-      <Paper sx={{ p: 3 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <Typography variant='h6' gutterBottom>
-              Recent Companies
-            </Typography>
-            {companies?.slice(0, 5).map(company => (
-              <Box key={company.id} display='flex' alignItems='center' mb={1}>
-                <Business sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant='body2'>{company.name}</Typography>
-              </Box>
-            ))}
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Typography variant='h6' gutterBottom>
-              Agent Status
-            </Typography>
-          </Grid>
-        </Grid>
-      </Paper>
+      <Box mt={4}>
+        <Typography variant='h5' component='h2' mb={3}>
+          {t('dashboard.recentActivity')}
+        </Typography>
+        <Paper sx={{ p: 2 }}>
+          <Typography variant='body2' color='textSecondary'>
+            {t('dashboard.lastUpdated')}: {new Date().toLocaleString()}
+          </Typography>
+        </Paper>
+      </Box>
     </Box>
   );
 };
