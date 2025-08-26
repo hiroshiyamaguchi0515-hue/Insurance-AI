@@ -27,6 +27,10 @@ import {
   Divider,
   Avatar,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Delete,
@@ -316,33 +320,31 @@ const PDFManagement = () => {
                 <CircularProgress />
               </Box>
             ) : companiesData.length > 0 ? (
-              <Grid container spacing={2}>
-                {companiesData.map(company => (
-                  <Grid item key={company.id}>
-                    <Button
-                      variant={
-                        selectedCompany?.id === company.id
-                          ? 'contained'
-                          : 'outlined'
-                      }
-                      onClick={() => handleCompanySelect(company)}
-                      startIcon={<Business />}
-                      sx={{
-                        px: 3,
-                        py: 1.5,
-                        borderRadius: 2,
-                        transition: 'all 0.2s ease-in-out',
-                        '&:hover': {
-                          transform: 'translateY(-2px)',
-                          boxShadow: theme.shadows[4],
-                        },
-                      }}
-                    >
-                      {company.name}
-                    </Button>
-                  </Grid>
-                ))}
-              </Grid>
+              <FormControl fullWidth>
+                <InputLabel id='company-select-label'>
+                  {t('common.select')} {t('common.company')}
+                </InputLabel>
+                <Select
+                  labelId='company-select-label'
+                  value={selectedCompany?.id || ''}
+                  label={`${t('common.select')} ${t('common.company')}`}
+                  onChange={e => {
+                    const company = companiesData.find(
+                      c => c.id === e.target.value
+                    );
+                    handleCompanySelect(company);
+                  }}
+                >
+                  {companiesData.map(company => (
+                    <MenuItem key={company.id} value={company.id}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Business sx={{ mr: 1, color: 'primary.main' }} />
+                        {company.name}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             ) : (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <Business

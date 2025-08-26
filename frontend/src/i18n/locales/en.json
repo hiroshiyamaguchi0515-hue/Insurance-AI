@@ -61,7 +61,13 @@
     "systemHealth": "System Health",
     "logout": "Logout",
     "profile": "Profile",
-    "settings": "Settings"
+    "settings": "Settings",
+    "categories": {
+      "main": "Main",
+      "management": "Management",
+      "content": "Content",
+      "aiServices": "AI Services"
+    }
   },
   "auth": {
     "login": "Login",
@@ -331,7 +337,15 @@
     "chunkSize": "Chunk Size",
     "overlap": "Overlap",
     "notCreated": "Not Created",
-    "never": "Never"
+    "never": "Never",
+    "subtitle": "Manage and monitor vector stores for all companies",
+    "configuration": "Configuration",
+    "status": {
+      "active": "Active",
+      "building": "Building",
+      "error": "Error",
+      "unknown": "Unknown"
+    }
   },
   "systemHealth": {
     "title": "System Health",
@@ -414,6 +428,7 @@
     "selectCompany": "Select Company",
     "documentQA": "Policy Q&A",
     "aiAgentChat": "AI Agent Chat",
+    "selectCompanyDescription": "Choose a company to view their chat conversations and conversation history",
     "newChat": "New Chat",
     "noMessages": "No messages yet",
     "noConversations": "No conversations yet",
@@ -432,15 +447,28 @@
     "conversationDeleted": "Conversation deleted successfully!",
     "deleteFailed": "Failed to delete conversation",
     "deleteConfirm": "Are you sure you want to delete this conversation?",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "totalConversations": "Total Conversations",
+    "totalMessages": "Total Messages",
+    "activeChats": "Active Chats",
+    "averageResponseTime": "Avg Response Time"
   },
   "customerDashboard": {
     "welcome": "Welcome to Your Insurance Dashboard",
-    "subtitle": "Manage your insurance documents and get AI-powered assistance",
-    "totalDocuments": "Total Documents",
-    "totalQuestions": "Total Questions",
+    "subtitle": "Monitor your insurance policies, documents, and AI assistance",
     "totalChats": "Total Chats",
     "aiAssistance": "AI Assistance",
+    "performanceMetrics": "Performance Metrics",
+    "aiResponseTime": "AI Response Time",
+    "documentProcessing": "Document Processing",
+    "questionAccuracy": "Question Accuracy",
+    "systemUptime": "System Uptime",
+    "loadingDashboard": "Loading your insurance dashboard...",
+    "connectionError": "Connection Error",
+    "connectionErrorDescription": "Unable to connect to the backend server. Please check if the server is running.",
+    "connectionErrorNote": "This is normal if you're running the frontend without the backend server.",
+    "totalDocuments": "Total Documents",
+    "totalQuestions": "Total Questions",
     "recentDocuments": "Recent Documents",
     "recentQuestions": "Recent Questions",
     "noDocuments": "No documents uploaded yet",
@@ -550,6 +578,7 @@
       "title": "Get in Touch",
       "subtitle": "Ready to transform your insurance business? Let's discuss how our AI assistant can help you.",
       "form": {
+        "title": "Send us a Message",
         "name": "Full Name",
         "email": "Email Address",
         "company": "Company Name",
@@ -564,7 +593,11 @@
         "email": "hello@insuranceassistant.com",
         "phone": "+1 (555) 123-4567",
         "address": "123 AI Street, Tech City, TC 12345",
-        "hours": "Monday - Friday: 9:00 AM - 6:00 PM EST"
+        "hours": "Monday - Friday: 9:00 AM - 6:00 PM EST",
+        "emailLabel": "Email",
+        "phoneLabel": "Phone",
+        "addressLabel": "Address",
+        "businessHoursLabel": "Business Hours"
       }
     },
     "footer": {

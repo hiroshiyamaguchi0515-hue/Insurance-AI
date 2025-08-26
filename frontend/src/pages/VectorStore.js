@@ -2,23 +2,17 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
+  Grid,
   Card,
   CardContent,
-  Grid,
-  Chip,
   Button,
-  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Chip,
   Avatar,
   IconButton,
   Tooltip,
@@ -28,31 +22,38 @@ import {
   Grow,
   Zoom,
   LinearProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
+  Paper,
 } from '@mui/material';
 import {
   Storage,
+  Refresh,
   Build,
   CheckCircle,
-  Error,
   Warning,
-  Info,
+  Error,
   Business,
   Description,
   TrendingUp,
   TrendingDown,
+  Settings,
+  Visibility,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { api, endpoints } from '../services/api';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { api, endpoints } from '../services/api';
 
-const VectorStoreManagement = () => {
-  const [rebuildDialogOpen, setRebuildDialogOpen] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState(null);
-  const [animateCards, setAnimateCards] = useState(false);
-  const queryClient = useQueryClient();
+const VectorStore = () => {
   const { t } = useTranslation();
   const theme = useTheme();
+  const queryClient = useQueryClient();
+  const [animateCards, setAnimateCards] = useState(false);
+  const [rebuildDialogOpen, setRebuildDialogOpen] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState(null);
 
   // Trigger animations after component mounts
   useEffect(() => {
@@ -60,8 +61,8 @@ const VectorStoreManagement = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Fetch companies for vector store status
-  const { data: companies, isLoading: companiesLoading } = useQuery(
+  // Fetch companies
+  const { data: companies = [], isLoading: companiesLoading } = useQuery(
     'companies',
     () => api.get(endpoints.adminCompanies).then(res => res.data),
     { staleTime: 30000 }
@@ -69,69 +70,26 @@ const VectorStoreManagement = () => {
 
   // Rebuild vector store mutation
   const rebuildMutation = useMutation(
-    companyId => api.post(endpoints.rebuildVectorStore(companyId)),
+    companyId => api.post(`/vectorstore/rebuild/${companyId}`),
     {
       onSuccess: () => {
-        toast.success(t('vectorStore.rebuildSuccess'));
         queryClient.invalidateQueries('companies');
         setRebuildDialogOpen(false);
         setSelectedCompany(null);
       },
       onError: error => {
-        toast.error(
-          error.response?.data?.detail || t('vectorStore.rebuildFailed')
-        );
+        console.error('Rebuild failed:', error);
       },
     }
   );
 
-  const handleRebuild = company => {
-    setSelectedCompany(company);
-    setRebuildDialogOpen(true);
-  };
-
-  const confirmRebuild = () => {
-    if (selectedCompany) {
-      rebuildMutation.mutate(selectedCompany.id);
-    }
-  };
-
-  const getVectorStoreStatus = company => {
-    if (company.pdf_count === 0) {
-      return {
-        status: 'no-documents',
-        color: 'default',
-        label: t('company.noDocuments'),
-      };
-    }
-
-    // This would typically come from a vector store status API
-    // For now, we'll assume it's healthy if there are documents
-    return { status: 'healthy', color: 'success', label: t('common.healthy') };
-  };
-
-  const getStatusIcon = status => {
-    switch (status) {
-      case 'healthy':
-        return <CheckCircle />;
-      case 'error':
-        return <Error />;
-      case 'warning':
-        return <Warning />;
-      case 'no-documents':
-        return <Info />;
-      default:
-        return <Storage />;
-    }
-  };
-
   // Calculate stats
   const totalStats = {
-    totalCompanies: companies?.length || 0,
-    activeVectorStores: companies?.filter(c => c.pdf_count > 0).length || 0,
-    totalDocuments:
-      companies?.reduce((acc, company) => acc + (company.pdf_count || 0), 0) ||
-      0,
+    totalCompanies: companies.length,
+    activeVectorStores: companies.filter(
+      c => c.vector_store_status === 'active'
+    ).length,
+    totalDocuments: companies.reduce((sum, c) => sum + (c.pdf_count || 0), 0),
     totalSize: '2.4 GB',
   };
 
@@ -174,33 +132,42 @@ const VectorStoreManagement = () => {
     },
   ];
 
-  if (companiesLoading) {
-    return (
-      <Box sx={{ p: 0 }}>
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Box sx={{ position: 'relative', mb: 3 }}>
-            <LinearProgress size={80} thickness={4} />
-            <Box
-              sx={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-              }}
-            >
-              <Storage sx={{ fontSize: 32, color: 'primary.main' }} />
-            </Box>
-          </Box>
-          <Typography variant='h6' color='textSecondary' sx={{ mb: 1 }}>
-            {t('common.loading')}
-          </Typography>
-          <Typography variant='body2' color='textSecondary'>
-            Loading vector stores...
-          </Typography>
-        </Box>
-      </Box>
-    );
-  }
+  const getStatusColor = status => {
+    switch (status) {
+      case 'active':
+        return 'success';
+      case 'building':
+        return 'warning';
+      case 'error':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStatusIcon = status => {
+    switch (status) {
+      case 'active':
+        return <CheckCircle />;
+      case 'building':
+        return <Build />;
+      case 'error':
+        return <Error />;
+      default:
+        return <Warning />;
+    }
+  };
+
+  const handleRebuild = companyId => {
+    setSelectedCompany(companies.find(c => c.id === companyId));
+    setRebuildDialogOpen(true);
+  };
+
+  const confirmRebuild = () => {
+    if (selectedCompany) {
+      rebuildMutation.mutate(selectedCompany.id);
+    }
+  };
 
   return (
     <Box sx={{ p: 0 }}>
@@ -321,7 +288,41 @@ const VectorStoreManagement = () => {
               </Typography>
             </Box>
 
-            {companies?.length > 0 ? (
+            {companiesLoading ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Box sx={{ position: 'relative', mb: 3 }}>
+                  <LinearProgress size={80} thickness={4} />
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
+                    <Storage sx={{ fontSize: 32, color: 'primary.main' }} />
+                  </Box>
+                </Box>
+                <Typography variant='h6' color='textSecondary' sx={{ mb: 1 }}>
+                  {t('common.loading')}
+                </Typography>
+                <Typography variant='body2' color='textSecondary'>
+                  Loading vector stores...
+                </Typography>
+              </Box>
+            ) : companies.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Storage
+                  sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+                />
+                <Typography variant='h6' color='textSecondary' gutterBottom>
+                  {t('vectorStore.noCompanies')}
+                </Typography>
+                <Typography variant='body2' color='textSecondary'>
+                  {t('vectorStore.companiesInfo')}
+                </Typography>
+              </Box>
+            ) : (
               <TableContainer component={Paper} sx={{ boxShadow: 'none' }}>
                 <Table>
                   <TableHead>
@@ -330,10 +331,10 @@ const VectorStoreManagement = () => {
                         {t('vectorStore.company')}
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>
-                        {t('common.status')}
+                        {t('vectorStore.status')}
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>
-                        {t('company.documents')}
+                        {t('vectorStore.documents')}
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>
                         {t('vectorStore.vectorStoreSize')}
@@ -347,104 +348,97 @@ const VectorStoreManagement = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {companies.map(company => {
-                      const status = getVectorStoreStatus(company);
-                      return (
-                        <TableRow
-                          key={company.id}
-                          sx={{
-                            transition: 'all 0.2s ease-in-out',
-                            '&:hover': {
-                              background: theme.palette.action.hover,
-                              transform: 'scale(1.01)',
-                            },
-                          }}
-                        >
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Avatar
-                                sx={{
-                                  width: 32,
-                                  height: 32,
-                                  mr: 2,
-                                  bgcolor: theme.palette.primary.main,
-                                }}
+                    {companies.map(company => (
+                      <TableRow
+                        key={company.id}
+                        sx={{
+                          transition: 'all 0.2s ease-in-out',
+                          '&:hover': {
+                            background: theme.palette.action.hover,
+                            transform: 'scale(1.01)',
+                          },
+                        }}
+                      >
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Avatar
+                              sx={{
+                                width: 32,
+                                height: 32,
+                                mr: 2,
+                                bgcolor: theme.palette.primary.main,
+                              }}
+                            >
+                              <Business />
+                            </Avatar>
+                            <Typography
+                              variant='subtitle2'
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {company.name}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            icon={getStatusIcon(
+                              company.vector_store_status || 'unknown'
+                            )}
+                            label={t(
+                              `vectorStore.status.${company.vector_store_status || 'unknown'}`
+                            )}
+                            color={getStatusColor(
+                              company.vector_store_status || 'unknown'
+                            )}
+                            variant='outlined'
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant='body2'>
+                            {company.pdf_count || 0}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant='body2'>
+                            {company.vector_store_size ||
+                              t('vectorStore.notCreated')}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant='body2' color='textSecondary'>
+                            {company.vector_store_updated_at ||
+                              t('vectorStore.never')}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Tooltip title={t('common.view')}>
+                              <IconButton size='small' color='primary'>
+                                <Visibility />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={t('vectorStore.rebuild')}>
+                              <IconButton
+                                size='small'
+                                color='warning'
+                                onClick={() => handleRebuild(company.id)}
+                                disabled={rebuildMutation.isLoading}
                               >
-                                <Business />
-                              </Avatar>
-                              <Typography
-                                variant='subtitle2'
-                                sx={{ fontWeight: 600 }}
-                              >
-                                {company.name}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              icon={getStatusIcon(status.status)}
-                              label={status.label}
-                              color={status.color}
-                              size='small'
-                              variant='outlined'
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant='body2'>
-                              {company.pdf_count || 0} PDFs
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant='body2'>
-                              {company.pdf_count > 0
-                                ? t('common.active')
-                                : t('vectorStore.notCreated')}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant='body2' color='textSecondary'>
-                              {company.updated_at
-                                ? new Date(
-                                    company.updated_at
-                                  ).toLocaleDateString()
-                                : t('vectorStore.never')}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                              <Tooltip title={t('vectorStore.rebuild')}>
-                                <IconButton
-                                  size='small'
-                                  color='warning'
-                                  onClick={() => handleRebuild(company)}
-                                  disabled={
-                                    rebuildMutation.isLoading ||
-                                    company.pdf_count === 0
-                                  }
-                                >
-                                  <Build />
-                                </IconButton>
-                              </Tooltip>
-                            </Box>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                                <Build />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={t('common.settings')}>
+                              <IconButton size='small' color='info'>
+                                <Settings />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </TableContainer>
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Storage
-                  sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
-                />
-                <Typography variant='h6' color='textSecondary' gutterBottom>
-                  {t('vectorStore.noCompanies')}
-                </Typography>
-                <Typography variant='body2' color='textSecondary'>
-                  {t('vectorStore.companiesInfo')}
-                </Typography>
-              </Box>
             )}
           </CardContent>
         </Card>
@@ -476,7 +470,7 @@ const VectorStoreManagement = () => {
                       {t('vectorStore.storageEngine')}:
                     </Typography>
                     <Typography variant='body2' fontWeight={600}>
-                      FAISS
+                      ChromaDB
                     </Typography>
                   </Box>
                   <Box
@@ -556,7 +550,7 @@ const VectorStoreManagement = () => {
         </Grid>
       </Slide>
 
-      {/* Rebuild Confirmation Dialog */}
+      {/* Rebuild Dialog */}
       <Dialog
         open={rebuildDialogOpen}
         onClose={() => setRebuildDialogOpen(false)}
@@ -602,4 +596,4 @@ const VectorStoreManagement = () => {
   );
 };
 
-export default VectorStoreManagement;
+export default VectorStore;

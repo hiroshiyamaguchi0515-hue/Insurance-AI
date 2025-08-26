@@ -111,7 +111,7 @@ const AppRoutes = () => {
       <Route
         path='/qa-logs'
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin']}>
             <QALogs />
           </ProtectedRoute>
         }

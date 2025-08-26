@@ -308,7 +308,7 @@ async def list_companies(db: Session = Depends(get_db)):
     """List all companies (admin only)"""
     return await get_all_companies(db)
 
-@app.get("/admin/companies", response_model=List[CompanyResponse], tags=["Company"])
+@app.get("/companies", response_model=List[CompanyResponse], tags=["Company"])
 async def get_companies(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     """Get all companies (accessible to all authenticated users)"""
     return await get_all_companies(db)

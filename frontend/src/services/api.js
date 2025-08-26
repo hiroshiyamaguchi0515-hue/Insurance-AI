@@ -76,6 +76,7 @@ export const endpoints = {
 
   // Companies
   company: id => `/admin/companies/${id}`,
+  companies: '/companies',
   adminCompanies: '/admin/companies',
   adminCompany: companyId => `/admin/companies/${companyId}`,
 
@@ -113,6 +114,7 @@ export const endpoints = {
   // Chat
   chatAsk: '/chat/ask',
   chatConversation: conversationId => `/chat/conversations/${conversationId}`,
+  chatConversations: '/chat/conversations',
 };
 
 export default api;

@@ -588,7 +588,7 @@ const LandingPage = () => {
                       component='h3'
                       sx={{ fontWeight: 'bold', mb: 3 }}
                     >
-                      Send us a Message
+                      {t('landing.contact.form.title')}
                     </Typography>
                     <form onSubmit={handleContactSubmit}>
                       <Grid container spacing={3}>
@@ -671,7 +671,7 @@ const LandingPage = () => {
                             variant='subtitle2'
                             sx={{ fontWeight: 'bold' }}
                           >
-                            Email
+                            {t('landing.contact.info.emailLabel')}
                           </Typography>
                           <Typography variant='body2' color='textSecondary'>
                             {t('landing.contact.info.email')}
@@ -685,7 +685,7 @@ const LandingPage = () => {
                             variant='subtitle2'
                             sx={{ fontWeight: 'bold' }}
                           >
-                            Phone
+                            {t('landing.contact.info.phoneLabel')}
                           </Typography>
                           <Typography variant='body2' color='textSecondary'>
                             {t('landing.contact.info.phone')}
@@ -699,7 +699,7 @@ const LandingPage = () => {
                             variant='subtitle2'
                             sx={{ fontWeight: 'bold' }}
                           >
-                            Address
+                            {t('landing.contact.info.addressLabel')}
                           </Typography>
                           <Typography variant='body2' color='textSecondary'>
                             {t('landing.contact.info.address')}
@@ -713,7 +713,7 @@ const LandingPage = () => {
                             variant='subtitle2'
                             sx={{ fontWeight: 'bold' }}
                           >
-                            Business Hours
+                            {t('landing.contact.info.businessHoursLabel')}
                           </Typography>
                           <Typography variant='body2' color='textSecondary'>
                             {t('landing.contact.info.hours')}

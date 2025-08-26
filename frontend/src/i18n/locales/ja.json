@@ -61,7 +61,13 @@
     "systemHealth": "システムヘルス",
     "logout": "ログアウト",
     "profile": "プロフィール",
-    "settings": "設定"
+    "settings": "設定",
+    "categories": {
+      "main": "メイン",
+      "management": "管理",
+      "content": "コンテンツ",
+      "aiServices": "AIサービス"
+    }
   },
   "auth": {
     "login": "ログイン",
@@ -331,7 +337,15 @@
     "chunkSize": "チャンクサイズ",
     "overlap": "オーバーラップ",
     "notCreated": "作成されていません",
-    "never": "なし"
+    "never": "なし",
+    "subtitle": "すべての会社のベクターストアを管理・監視",
+    "configuration": "設定",
+    "status": {
+      "active": "アクティブ",
+      "building": "構築中",
+      "error": "エラー",
+      "unknown": "不明"
+    }
   },
   "systemHealth": {
     "title": "システムヘルス",
@@ -414,6 +428,7 @@
     "selectCompany": "会社を選択",
     "documentQA": "ポリシーQ&A",
     "aiAgentChat": "AIエージェントチャット",
+    "selectCompanyDescription": "ポリシーQ&Aログと会話履歴を表示する会社を選択してください",
     "newChat": "新しいチャット",
     "noMessages": "まだメッセージがありません",
     "noConversations": "まだ会話がありません",
@@ -432,35 +447,26 @@
     "conversationDeleted": "会話が正常に削除されました！",
     "deleteFailed": "会話の削除に失敗しました",
     "deleteConfirm": "この会話を削除してもよろしいですか？",
-    "yesterday": "昨日"
+    "yesterday": "昨日",
+    "totalConversations": "会話総数",
+    "totalMessages": "メッセージ総数",
+    "activeChats": "アクティブチャット",
+    "averageResponseTime": "平均応答時間"
   },
   "customerDashboard": {
     "welcome": "保険ダッシュボードへようこそ",
-    "subtitle": "保険文書を管理し、AI搭載アシスタンスを利用",
-    "totalDocuments": "文書総数",
-    "totalQuestions": "質問総数",
+    "subtitle": "保険ポリシー、書類、AIアシスタンスを監視",
     "totalChats": "チャット総数",
     "aiAssistance": "AIアシスタンス",
-    "recentDocuments": "最近の文書",
-    "recentQuestions": "最近の質問",
-    "noDocuments": "まだ文書がアップロードされていません",
-    "noQuestions": "まだ質問がありません",
-    "quickActions": "クイックアクション",
-    "uploadDocument": "文書をアップロード",
-    "askQuestion": "質問する",
-    "startChat": "チャットを開始",
-    "aiAssistant": "AIアシスタント",
-    "performanceMetrics": "パフォーマンスメトリクス",
-    "companyInformation": "会社情報",
-    "noCompanies": "利用可能な会社がありません",
-    "quickAnswers": "保険に関する質問に素早く回答",
-    "interactiveConversation": "AIとの対話的な会話",
-    "contactAdmin": "文書をアップロードするには管理者に連絡",
-    "agentLogs": "エージェントログ",
-    "model": "モデル",
-    "temperature": "温度",
-    "recentActivity": "最近のアクティビティ",
-    "recentActivityDescription": "最近のやり取りと文書アクティビティを追跡"
+    "performanceMetrics": "パフォーマンス指標",
+    "aiResponseTime": "AI応答時間",
+    "documentProcessing": "書類処理",
+    "questionAccuracy": "質問精度",
+    "systemUptime": "システム稼働時間",
+    "loadingDashboard": "保険ダッシュボードを読み込み中...",
+    "connectionError": "接続エラー",
+    "connectionErrorDescription": "バックエンドサーバーに接続できません。サーバーが実行されているか確認してください。",
+    "connectionErrorNote": "バックエンドサーバーなしでフロントエンドを実行している場合、これは正常です。"
   },
   "landing": {
     "hero": {
@@ -550,6 +556,7 @@
       "title": "お問い合わせ",
       "subtitle": "保険事業の変革の準備はできましたか？AIアシスタントがどのようにお役に立てるかお話ししましょう。",
       "form": {
+        "title": "メッセージを送信",
         "name": "氏名",
         "email": "メールアドレス",
         "company": "会社名",
@@ -564,7 +571,11 @@
         "email": "hello@insuranceassistant.com",
         "phone": "+1 (555) 123-4567",
         "address": "123 AI Street, Tech City, TC 12345",
-        "hours": "月曜日 - 金曜日: 午前9:00 - 午後6:00 EST"
+        "hours": "月曜日 - 金曜日: 午前9:00 - 午後6:00 EST",
+        "emailLabel": "メールアドレス",
+        "phoneLabel": "電話番号",
+        "addressLabel": "住所",
+        "businessHoursLabel": "営業時間"
       }
     },
     "footer": {

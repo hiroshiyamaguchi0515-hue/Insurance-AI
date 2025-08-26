@@ -22,6 +22,15 @@ import {
   DialogContent,
   DialogActions,
   Chip,
+  useTheme,
+  Fade,
+  Slide,
+  LinearProgress,
+  Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Chat,
@@ -42,6 +51,7 @@ const ChatComponent = () => {
   const { user } = useSelector(state => state.auth);
   const location = useLocation();
   const { t } = useTranslation();
+  const theme = useTheme();
 
   // Get company from URL params
   const searchParams = new URLSearchParams(location.search);
@@ -52,11 +62,18 @@ const ChatComponent = () => {
   const [newQuestion, setNewQuestion] = useState('');
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [animateCards, setAnimateCards] = useState(false);
+
+  // Trigger animations after component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimateCards(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Get companies
   const { data: companies } = useQuery(
     'customerCompanies',
-    () => api.get(endpoints.adminCompanies).then(res => res.data),
+    () => api.get(endpoints.companies).then(res => res.data),
     { enabled: !!user }
   );
 
@@ -66,14 +83,14 @@ const ChatComponent = () => {
     isLoading: conversationsLoading,
     refetch: refetchConversations,
   } = useQuery(
-    ['chatConversations', companyId],
+    ['chatConversations', selectedCompany?.id],
     () =>
       api
         .get(
-          `/chat/conversations${companyId ? `?company_id=${companyId}` : ''}`
+          `/chat/conversations${selectedCompany?.id ? `?company_id=${selectedCompany.id}` : ''}`
         )
         .then(res => res.data),
-    { enabled: !!user }
+    { enabled: !!selectedCompany }
   );
 
   // Get selected conversation details
@@ -204,348 +221,536 @@ const ChatComponent = () => {
 
   if (!selectedCompany) {
     return (
-      <Box>
-        <Box display='flex' alignItems='center' mb={3}>
-          {selectedCompany && (
-            <IconButton onClick={goBack} sx={{ mr: 2 }}>
-              <ArrowBack />
-            </IconButton>
-          )}
-          <Typography variant='h4' component='h1' sx={{ fontWeight: 'bold' }}>
-            {t('chat.title')}
-          </Typography>
-        </Box>
-
-        <Card sx={{ mb: 4 }}>
-          <CardContent>
-            <Typography variant='h6' gutterBottom>
-              {t('chat.selectCompany')}
+      <Box sx={{ p: 0 }}>
+        {/* Header Section */}
+        <Fade in={animateCards} timeout={800}>
+          <Box sx={{ mb: 4 }}>
+            <Typography
+              variant='h3'
+              component='h1'
+              sx={{
+                fontWeight: 800,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                mb: 2,
+              }}
+            >
+              {t('chat.title')}
             </Typography>
-            <Grid container spacing={2}>
-              {companies?.map(company => (
-                <Grid item key={company.id}>
-                  <Button
-                    variant='outlined'
-                    onClick={() => setSelectedCompany(company)}
-                    startIcon={<Business />}
-                  >
-                    {company.name}
-                  </Button>
+            <Typography variant='h6' color='textSecondary' sx={{ mb: 3 }}>
+              {t('chat.selectCompanyDescription')}
+            </Typography>
+          </Box>
+        </Fade>
+
+        {/* Company Selection */}
+        <Slide direction='up' in={animateCards} timeout={1200}>
+          <Card
+            sx={{
+              background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`,
+              border: `1px solid ${theme.palette.divider}`,
+              transition: 'all 0.3s ease-in-out',
+              '&:hover': {
+                boxShadow: theme.shadows[8],
+              },
+            }}
+          >
+            <CardContent sx={{ p: 4, textAlign: 'center' }}>
+              <Chat sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+              <Typography variant='h6' color='textSecondary' gutterBottom>
+                {t('chat.selectCompany')}
+              </Typography>
+              <Typography variant='body2' color='textSecondary' sx={{ mb: 3 }}>
+                {t('chat.selectCompanyDescription')}
+              </Typography>
+
+              <Grid container spacing={2} justifyContent='center'>
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel id='company-select-label'>
+                      {t('common.select')} {t('common.company')}
+                    </InputLabel>
+                    <Select
+                      labelId='company-select-label'
+                      value={selectedCompany?.id || ''}
+                      label={`${t('common.select')} ${t('common.company')}`}
+                      onChange={e => {
+                        const company = companies?.find(
+                          c => c.id === e.target.value
+                        );
+                        if (company) {
+                          setSelectedCompany(company);
+                          setSelectedConversation(null);
+                        }
+                      }}
+                    >
+                      {companies?.map(company => (
+                        <MenuItem key={company.id} value={company.id}>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Business sx={{ mr: 1, color: 'primary.main' }} />
+                            {company.name}
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
-              ))}
-            </Grid>
-          </CardContent>
-        </Card>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Slide>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ height: 'calc(100vh - 120px)', display: 'flex' }}>
-      {/* Left Sidebar - Conversations List */}
-      <Box
-        sx={{
-          width: 350,
-          borderRight: 1,
-          borderColor: 'divider',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {/* Header */}
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Box
-            display='flex'
-            alignItems='center'
-            justifyContent='space-between'
-            mb={2}
-          >
-            <Box display='flex' alignItems='center'>
-              <IconButton onClick={goBack} sx={{ mr: 1 }}>
-                <ArrowBack />
-              </IconButton>
-              <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
-                {selectedCompany.name}
-              </Typography>
-            </Box>
-            <IconButton onClick={refetchConversations} size='small'>
-              <Refresh />
+    <Box sx={{ p: 0 }}>
+      {/* Header Section */}
+      <Fade in={animateCards} timeout={800}>
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <IconButton
+              onClick={goBack}
+              sx={{
+                mr: 2,
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'translateX(-4px)',
+                  boxShadow: theme.shadows[4],
+                },
+              }}
+            >
+              <ArrowBack />
             </IconButton>
+            <Typography
+              variant='h3'
+              component='h1'
+              sx={{
+                fontWeight: 800,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              {selectedCompany.name} - {t('chat.title')}
+            </Typography>
           </Box>
-
-          <Typography variant='body2' color='text.secondary' mb={2}>
+          <Typography variant='h6' color='textSecondary' sx={{ mb: 3 }}>
             {chatType === 'simple'
               ? t('chat.documentQA')
               : t('chat.aiAgentChat')}
           </Typography>
-
-          <Button
-            variant='contained'
-            fullWidth
-            startIcon={<Add />}
-            onClick={handleNewChat}
-          >
-            {t('chat.newChat')}
-          </Button>
         </Box>
-
-        {/* Conversations List */}
-        <Box sx={{ flex: 1, overflow: 'auto' }}>
-          {conversationsLoading ? (
-            <Box sx={{ p: 2, textAlign: 'center' }}>
-              <Typography>{t('common.loading')}</Typography>
-            </Box>
-          ) : conversations?.length > 0 ? (
-            <List>
-              {conversations.map((conversation, index) => (
-                <React.Fragment key={conversation.id}>
-                  <ListItem
-                    button
-                    selected={selectedConversation?.id === conversation.id}
-                    onClick={() => handleConversationSelect(conversation)}
-                    sx={{
-                      '&.Mui-selected': {
-                        backgroundColor: 'primary.main',
-                        color: 'primary.contrastText',
-                        '&:hover': {
-                          backgroundColor: 'primary.dark',
-                        },
-                      },
-                    }}
-                  >
-                    <ListItemAvatar>
-                      <Avatar
-                        sx={{
-                          bgcolor:
-                            conversation.chat_type === 'agent'
-                              ? 'secondary.main'
-                              : 'primary.main',
-                        }}
-                      >
-                        {conversation.chat_type === 'agent' ? (
-                          <SmartToy />
-                        ) : (
-                          <Chat />
-                        )}
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={conversation.title}
-                      secondary={
-                        <Box>
-                          <Typography variant='caption' display='block'>
-                            {conversation.last_message || t('chat.noMessages')}
-                          </Typography>
-                          <Box
-                            display='flex'
-                            alignItems='center'
-                            gap={1}
-                            mt={0.5}
-                          >
-                            <Chip
-                              label={conversation.chat_type}
-                              size='small'
-                              color={
-                                conversation.chat_type === 'agent'
-                                  ? 'secondary'
-                                  : 'primary'
-                              }
-                            />
-                            <Typography
-                              variant='caption'
-                              color='text.secondary'
-                            >
-                              {formatTimestamp(conversation.updated_at)}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      }
-                    />
-                    <IconButton
-                      size='small'
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleDeleteConversation(conversation.id);
-                      }}
-                      sx={{ color: 'error.main' }}
-                    >
-                      <Delete />
-                    </IconButton>
-                  </ListItem>
-                  {index < conversations.length - 1 && <Divider />}
-                </React.Fragment>
-              ))}
-            </List>
-          ) : (
-            <Box sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
-              <Chat sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
-              <Typography variant='h6' gutterBottom>
-                {t('chat.noConversations')}
-              </Typography>
-              <Typography variant='body2'>{t('chat.startNewChat')}</Typography>
-            </Box>
-          )}
-        </Box>
-      </Box>
-
-      {/* Right Side - Chat Messages */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {selectedConversation ? (
-          <>
-            {/* Chat Header */}
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-              <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
-                {selectedConversation.title}
-              </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                {selectedConversation.message_count} {t('chat.messages')} •{' '}
-                {formatTimestamp(selectedConversation.updated_at)}
-              </Typography>
-            </Box>
-
-            {/* Messages */}
+      </Fade>
+      {/* Chat Interface */}
+      <Slide direction='up' in={animateCards} timeout={1200}>
+        <Card
+          sx={{
+            background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`,
+            border: `1px solid ${theme.palette.divider}`,
+            transition: 'all 0.3s ease-in-out',
+            '&:hover': {
+              boxShadow: theme.shadows[8],
+            },
+          }}
+        >
+          <Box sx={{ height: 'calc(100vh - 400px)', display: 'flex' }}>
+            {/* Left Sidebar - Conversations List */}
             <Box
               sx={{
-                flex: 1,
-                overflow: 'auto',
-                p: 2,
-                backgroundColor: 'grey.50',
+                width: 350,
+                borderRight: 1,
+                borderColor: 'divider',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              {conversationDetail?.messages?.map(message => (
+              {/* Header */}
+              <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
                 <Box
-                  key={message.id}
                   display='flex'
-                  justifyContent={
-                    message.message_type === 'user' ? 'flex-end' : 'flex-start'
-                  }
+                  alignItems='center'
+                  justifyContent='space-between'
                   mb={2}
                 >
-                  <Box
-                    sx={{
-                      maxWidth: '70%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems:
-                        message.message_type === 'user'
-                          ? 'flex-end'
-                          : 'flex-start',
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        mb: 1,
-                        gap: 1,
-                      }}
-                    >
-                      {message.message_type === 'user' ? (
-                        <>
-                          <Typography variant='caption' color='text.secondary'>
-                            {formatTimestamp(message.timestamp)}
-                          </Typography>
-                          <Avatar
-                            sx={{
-                              width: 24,
-                              height: 24,
-                              bgcolor: 'primary.main',
-                            }}
-                          >
-                            <Person fontSize='small' />
-                          </Avatar>
-                        </>
-                      ) : (
-                        <>
-                          <Avatar
-                            sx={{
-                              width: 24,
-                              height: 24,
-                              bgcolor: getMessageColor(message.message_type),
-                            }}
-                          >
-                            {getMessageIcon(message.message_type)}
-                          </Avatar>
-                          <Typography variant='caption' color='text.secondary'>
-                            {formatTimestamp(message.timestamp)}
-                          </Typography>
-                        </>
-                      )}
-                    </Box>
-
-                    <Paper
-                      sx={{
-                        p: 2,
-                        backgroundColor:
-                          message.message_type === 'user'
-                            ? 'primary.main'
-                            : 'white',
-                        color:
-                          message.message_type === 'user'
-                            ? 'primary.contrastText'
-                            : 'text.primary',
-                        borderRadius: 2,
-                        boxShadow: 1,
-                      }}
-                    >
-                      <Typography variant='body1'>{message.content}</Typography>
-                    </Paper>
+                  <Box display='flex' alignItems='center'>
+                    <Typography variant='h6' sx={{ fontWeight: 700 }}>
+                      {selectedCompany.name}
+                    </Typography>
                   </Box>
+                  <Tooltip title={t('common.refresh')}>
+                    <IconButton
+                      onClick={refetchConversations}
+                      size='small'
+                      sx={{
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                          transform: 'rotate(180deg)',
+                          color: theme.palette.primary.main,
+                        },
+                      }}
+                    >
+                      <Refresh />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
-              ))}
-            </Box>
 
-            {/* Input Area */}
-            <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-              <Box display='flex' gap={2}>
-                <TextField
-                  fullWidth
-                  placeholder={t('chat.questionPlaceholder')}
-                  value={newQuestion}
-                  onChange={e => setNewQuestion(e.target.value)}
-                  onKeyPress={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleAskQuestion();
-                    }
-                  }}
-                  disabled={askQuestionMutation.isLoading}
-                  variant='outlined'
-                />
                 <Button
                   variant='contained'
-                  onClick={handleAskQuestion}
-                  disabled={
-                    !newQuestion.trim() || askQuestionMutation.isLoading
-                  }
-                  sx={{ minWidth: 100 }}
+                  fullWidth
+                  startIcon={<Add />}
+                  onClick={handleNewChat}
+                  sx={{
+                    py: 1.5,
+                    borderRadius: 2,
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: theme.shadows[4],
+                    },
+                  }}
                 >
-                  {askQuestionMutation.isLoading
-                    ? t('chat.sending')
-                    : t('chat.send')}
+                  {t('chat.newChat')}
                 </Button>
               </Box>
+
+              {/* Conversations List */}
+              <Box sx={{ flex: 1, overflow: 'auto' }}>
+                {conversationsLoading ? (
+                  <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <Box sx={{ position: 'relative', mb: 3 }}>
+                      <LinearProgress size={80} thickness={4} />
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                        }}
+                      >
+                        <Chat sx={{ fontSize: 32, color: 'primary.main' }} />
+                      </Box>
+                    </Box>
+                    <Typography
+                      variant='h6'
+                      color='textSecondary'
+                      sx={{ mb: 1 }}
+                    >
+                      {t('common.loading')}
+                    </Typography>
+                    <Typography variant='body2' color='textSecondary'>
+                      Loading conversations...
+                    </Typography>
+                  </Box>
+                ) : conversations?.length > 0 ? (
+                  <List>
+                    {conversations.map((conversation, index) => (
+                      <React.Fragment key={conversation.id}>
+                        <ListItem
+                          button
+                          selected={
+                            selectedConversation?.id === conversation.id
+                          }
+                          onClick={() => handleConversationSelect(conversation)}
+                          sx={{
+                            transition: 'all 0.2s ease-in-out',
+                            '&:hover': {
+                              transform: 'translateX(4px)',
+                              backgroundColor: theme.palette.action.hover,
+                            },
+                            '&.Mui-selected': {
+                              backgroundColor: 'primary.main',
+                              color: 'primary.contrastText',
+                              '&:hover': {
+                                backgroundColor: 'primary.dark',
+                              },
+                            },
+                          }}
+                        >
+                          <ListItemAvatar>
+                            <Avatar
+                              sx={{
+                                bgcolor:
+                                  conversation.chat_type === 'agent'
+                                    ? 'secondary.main'
+                                    : 'primary.main',
+                              }}
+                            >
+                              {conversation.chat_type === 'agent' ? (
+                                <SmartToy />
+                              ) : (
+                                <Chat />
+                              )}
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={conversation.title}
+                            secondary={
+                              <Box>
+                                <Typography variant='caption' display='block'>
+                                  {conversation.last_message ||
+                                    t('chat.noMessages')}
+                                </Typography>
+                                <Box
+                                  display='flex'
+                                  alignItems='center'
+                                  gap={1}
+                                  mt={0.5}
+                                >
+                                  <Chip
+                                    label={conversation.chat_type}
+                                    size='small'
+                                    color={
+                                      conversation.chat_type === 'agent'
+                                        ? 'secondary'
+                                        : 'primary'
+                                    }
+                                  />
+                                  <Typography
+                                    variant='caption'
+                                    color='text.secondary'
+                                  >
+                                    {formatTimestamp(conversation.updated_at)}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            }
+                          />
+                          <Tooltip title={t('common.delete')}>
+                            <IconButton
+                              size='small'
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleDeleteConversation(conversation.id);
+                              }}
+                              sx={{
+                                color: 'error.main',
+                                transition: 'all 0.2s ease-in-out',
+                                '&:hover': {
+                                  transform: 'scale(1.1)',
+                                  backgroundColor: 'error.light',
+                                  color: 'error.contrastText',
+                                },
+                              }}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Tooltip>
+                        </ListItem>
+                        {index < conversations.length - 1 && <Divider />}
+                      </React.Fragment>
+                    ))}
+                  </List>
+                ) : (
+                  <Box
+                    sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}
+                  >
+                    <Chat sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+                    <Typography variant='h6' gutterBottom>
+                      {t('chat.noConversations')}
+                    </Typography>
+                    <Typography variant='body2'>
+                      {t('chat.startNewChat')}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
             </Box>
-          </>
-        ) : (
-          <Box
-            display='flex'
-            flexDirection='column'
-            alignItems='center'
-            justifyContent='center'
-            height='100%'
-            color='text.secondary'
-          >
-            <Chat sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
-            <Typography variant='h6' gutterBottom>
-              {t('chat.selectConversation')}
-            </Typography>
-            <Typography variant='body2' textAlign='center'>
-              {t('chat.chooseConversation')}
-            </Typography>
+
+            {/* Right Side - Chat Messages */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              {selectedConversation ? (
+                <>
+                  {/* Chat Header */}
+                  <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                    <Typography variant='h6' sx={{ fontWeight: 700 }}>
+                      {selectedConversation.title}
+                    </Typography>
+                    <Typography variant='body2' color='text.secondary'>
+                      {selectedConversation.message_count} {t('chat.messages')}{' '}
+                      • {formatTimestamp(selectedConversation.updated_at)}
+                    </Typography>
+                  </Box>
+
+                  {/* Messages */}
+                  <Box
+                    sx={{
+                      flex: 1,
+                      overflow: 'auto',
+                      p: 2,
+                      backgroundColor: 'grey.50',
+                    }}
+                  >
+                    {conversationDetail?.messages?.map(message => (
+                      <Box
+                        key={message.id}
+                        display='flex'
+                        justifyContent={
+                          message.message_type === 'user'
+                            ? 'flex-end'
+                            : 'flex-start'
+                        }
+                        mb={2}
+                      >
+                        <Box
+                          sx={{
+                            maxWidth: '70%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems:
+                              message.message_type === 'user'
+                                ? 'flex-end'
+                                : 'flex-start',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              mb: 1,
+                              gap: 1,
+                            }}
+                          >
+                            {message.message_type === 'user' ? (
+                              <>
+                                <Typography
+                                  variant='caption'
+                                  color='text.secondary'
+                                >
+                                  {formatTimestamp(message.timestamp)}
+                                </Typography>
+                                <Avatar
+                                  sx={{
+                                    width: 24,
+                                    height: 24,
+                                    bgcolor: 'primary.main',
+                                  }}
+                                >
+                                  <Person fontSize='small' />
+                                </Avatar>
+                              </>
+                            ) : (
+                              <>
+                                <Avatar
+                                  sx={{
+                                    width: 24,
+                                    height: 24,
+                                    bgcolor: getMessageColor(
+                                      message.message_type
+                                    ),
+                                  }}
+                                >
+                                  {getMessageIcon(message.message_type)}
+                                </Avatar>
+                                <Typography
+                                  variant='caption'
+                                  color='text.secondary'
+                                >
+                                  {formatTimestamp(message.timestamp)}
+                                </Typography>
+                              </>
+                            )}
+                          </Box>
+
+                          <Paper
+                            sx={{
+                              p: 2,
+                              backgroundColor:
+                                message.message_type === 'user'
+                                  ? 'primary.main'
+                                  : 'white',
+                              color:
+                                message.message_type === 'user'
+                                  ? 'primary.contrastText'
+                                  : 'text.primary',
+                              borderRadius: 2,
+                              boxShadow: 1,
+                              transition: 'all 0.2s ease-in-out',
+                              '&:hover': {
+                                boxShadow: 3,
+                                transform: 'translateY(-2px)',
+                              },
+                            }}
+                          >
+                            <Typography variant='body1'>
+                              {message.content}
+                            </Typography>
+                          </Paper>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+
+                  {/* Input Area */}
+                  <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+                    <Box display='flex' gap={2}>
+                      <TextField
+                        fullWidth
+                        placeholder={t('chat.questionPlaceholder')}
+                        value={newQuestion}
+                        onChange={e => setNewQuestion(e.target.value)}
+                        onKeyPress={e => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAskQuestion();
+                          }
+                        }}
+                        disabled={askQuestionMutation.isLoading}
+                        variant='outlined'
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                          },
+                        }}
+                      />
+                      <Button
+                        variant='contained'
+                        onClick={handleAskQuestion}
+                        disabled={
+                          !newQuestion.trim() || askQuestionMutation.isLoading
+                        }
+                        sx={{
+                          minWidth: 100,
+                          borderRadius: 2,
+                          transition: 'all 0.2s ease-in-out',
+                          '&:hover': {
+                            transform: 'translateY(-2px)',
+                            boxShadow: theme.shadows[4],
+                          },
+                        }}
+                      >
+                        {askQuestionMutation.isLoading
+                          ? t('chat.sending')
+                          : t('chat.send')}
+                      </Button>
+                    </Box>
+                  </Box>
+                </>
+              ) : (
+                <Box
+                  display='flex'
+                  flexDirection='column'
+                  alignItems='center'
+                  justifyContent='center'
+                  height='100%'
+                  color='text.secondary'
+                >
+                  <Chat sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
+                  <Typography variant='h6' gutterBottom>
+                    {t('chat.selectConversation')}
+                  </Typography>
+                  <Typography variant='body2' textAlign='center'>
+                    {t('chat.chooseConversation')}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
           </Box>
-        )}
-      </Box>
+        </Card>
+      </Slide>
 
       {/* New Chat Dialog */}
       <Dialog

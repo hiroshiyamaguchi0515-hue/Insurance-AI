@@ -512,7 +512,7 @@ const QALogs = () => {
                         </TableCell>
                         <TableCell>
                           <Typography variant='body2' color='textSecondary'>
-                            {formatDate(log.created_at)}
+                            {formatDate(log.timestamp)}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -572,7 +572,7 @@ const QALogs = () => {
               </Typography>
               <Typography variant='body2' color='textSecondary'>
                 <strong>{t('common.created')}:</strong>{' '}
-                {formatDate(logDetails.created_at)}
+                {formatDate(logDetails.timestamp)}
               </Typography>
             </Box>
           )}
