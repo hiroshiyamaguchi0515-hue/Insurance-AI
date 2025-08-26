@@ -70,14 +70,12 @@ export const endpoints = {
   refresh: '/auth/refresh',
 
   // Users
-  users: '/users',
   userMe: '/users/me',
   adminUsers: '/admin/users',
   adminUser: userId => `/admin/users/${userId}`,
 
   // Companies
-  companies: '/companies',
-  company: id => `/companies/${id}`,
+  company: id => `/admin/companies/${id}`,
   adminCompanies: '/admin/companies',
   adminCompany: companyId => `/admin/companies/${companyId}`,
 

@@ -1,96 +1,64 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Paper,
   IconButton,
   Chip,
+  Avatar,
+  useTheme,
+  Fade,
+  Slide,
+  Grow,
+  Zoom,
+  Divider,
+  LinearProgress,
+  Alert,
+  Snackbar,
+  Tooltip,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Add,
   Edit,
   Delete,
-  Person,
+  People,
   AdminPanelSettings,
+  Person,
+  CheckCircle,
+  Warning,
+  TrendingUp,
+  TrendingDown,
 } from '@mui/icons-material';
-import { useQuery, useMutation } from 'react-query';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { api, endpoints } from '../services/api';
-import { toast } from 'react-hot-toast';
 
 const UserManagement = () => {
   const { t } = useTranslation();
-  const [users, setUsers] = useState([]);
+  const theme = useTheme();
+  const queryClient = useQueryClient();
+  const [animateCards, setAnimateCards] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  // Fetch users
-  const { isLoading, refetch } = useQuery(
-    'adminUsers',
-    () =>
-      api.get(endpoints.adminUsers).then(res => {
-        setUsers(res.data);
-        return res.data;
-      }),
-    { refetchInterval: 30000 }
-  );
-
-  // Create/Update user mutation
-  const userMutation = useMutation(
-    data => {
-      if (editingUser) {
-        return api.patch(endpoints.adminUser(editingUser.id), data);
-      } else {
-        return api.post(endpoints.adminUsers, data);
-      }
-    },
-    {
-      onSuccess: () => {
-        toast.success(
-          editingUser ? t('user.updateSuccess') : t('user.createSuccess')
-        );
-        setDialogOpen(false);
-        setEditingUser(null);
-        refetch();
-      },
-      onError: error => {
-        toast.error(
-          error.response?.data?.detail ||
-            (editingUser ? t('errors.general') : t('errors.general'))
-        );
-      },
-    }
-  );
-
-  // Delete user mutation
-  const deleteUserMutation = useMutation(
-    userId => api.delete(endpoints.adminUser(userId)),
-    {
-      onSuccess: () => {
-        toast.success(t('user.deleteSuccess'));
-        refetch();
-      },
-      onError: error => {
-        toast.error(error.response?.data?.detail || t('errors.general'));
-      },
-    }
-  );
-
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -98,40 +66,161 @@ const UserManagement = () => {
     password: '',
   });
   const [formErrors, setFormErrors] = useState({});
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
-  const validateForm = () => {
-    const errors = {};
+  // Fetch data with error handling
+  const {
+    data: users,
+    isLoading: usersLoading,
+    error: usersError,
+  } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => api.get(endpoints.adminUsers).then(res => res.data),
+    retry: 1,
+    retryDelay: 1000,
+  });
 
-    if (!formData.username.trim()) {
-      errors.username = `${t('common.username')} ${t('common.required')}`;
-    }
+  // Mutations
+  const createUserMutation = useMutation({
+    mutationFn: data => api.post(endpoints.adminUsers, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['users']);
+      setSnackbar({
+        open: true,
+        message: t('user.createSuccess'),
+        severity: 'success',
+      });
+      handleCloseDialog();
+    },
+    onError: error => {
+      // Extract specific error message from backend response
+      let errorMessage = t('user.createError');
 
-    if (!formData.email.trim()) {
-      errors.email = `${t('common.email')} ${t('common.required')}`;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = t('user.emailInvalid');
-    }
+      if (error.response?.data) {
+        const responseData = error.response.data;
 
-    if (!editingUser && !formData.password.trim()) {
-      errors.password = t('user.passwordRequired');
-    }
+        // Handle different error response formats
+        if (typeof responseData.detail === 'string') {
+          errorMessage = responseData.detail;
+        } else if (typeof responseData.message === 'string') {
+          errorMessage = responseData.message;
+        } else if (Array.isArray(responseData.detail)) {
+          // Handle validation error array
+          errorMessage = responseData.detail
+            .map(err => err.msg || err.message || 'Validation error')
+            .join(', ');
+        } else if (typeof responseData === 'string') {
+          errorMessage = responseData;
+        }
+      }
 
-    if (!formData.role) {
-      errors.role = t('user.roleRequired');
-    }
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error',
+      });
+    },
+  });
 
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, data }) => api.put(endpoints.adminUser(id), data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['users']);
+      setSnackbar({
+        open: true,
+        message: t('user.updateSuccess'),
+        severity: 'success',
+      });
+      handleCloseDialog();
+    },
+    onError: error => {
+      // Extract specific error message from backend response
+      let errorMessage = t('user.updateError');
+
+      if (error.response?.data) {
+        const responseData = error.response.data;
+
+        // Handle different error response formats
+        if (typeof responseData.detail === 'string') {
+          errorMessage = responseData.detail;
+        } else if (typeof responseData.message === 'string') {
+          errorMessage = responseData.message;
+        } else if (Array.isArray(responseData.detail)) {
+          // Handle validation error array
+          errorMessage = responseData.detail
+            .map(err => err.msg || err.message || 'Validation error')
+            .join(', ');
+        } else if (typeof responseData === 'string') {
+          errorMessage = responseData;
+        }
+      }
+
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error',
+      });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: id => api.delete(endpoints.adminUser(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['users']);
+      setSnackbar({
+        open: true,
+        message: t('user.deleteSuccess'),
+        severity: 'success',
+      });
+    },
+    onError: error => {
+      // Extract specific error message from backend response
+      let errorMessage = t('user.deleteError');
+
+      if (error.response?.data) {
+        const responseData = error.response.data;
+
+        // Handle different error response formats
+        if (typeof responseData.detail === 'string') {
+          errorMessage = responseData.detail;
+        } else if (typeof responseData.message === 'string') {
+          errorMessage = responseData.message;
+        } else if (Array.isArray(responseData.detail)) {
+          // Handle validation error array
+          errorMessage = responseData.detail
+            .map(err => err.msg || err.message || 'Validation error')
+            .join(', ');
+        } else if (typeof responseData === 'string') {
+          errorMessage = responseData;
+        }
+      }
+
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error',
+      });
+    },
+  });
+
+  useEffect(() => {
+    // Trigger animations after component mounts
+    const timer = setTimeout(() => setAnimateCards(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleOpenDialog = (user = null) => {
     if (user) {
       setEditingUser(user);
       setFormData({
         username: user.username,
-        email: user.email || '',
+        email: user.email,
         role: user.role,
-        password: '',
+        password: '', // Clear password when editing
       });
     } else {
       setEditingUser(null);
@@ -142,12 +231,12 @@ const UserManagement = () => {
         password: '',
       });
     }
-    setFormErrors({});
-    setDialogOpen(true);
+    setFormErrors({}); // Clear any previous errors
+    setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
-    setDialogOpen(false);
+    setOpenDialog(false);
     setEditingUser(null);
     setFormData({
       username: '',
@@ -155,208 +244,469 @@ const UserManagement = () => {
       role: 'user',
       password: '',
     });
-    setFormErrors({});
+    setFormErrors({}); // Clear errors when closing
   };
 
   const handleSubmit = e => {
     e.preventDefault();
 
+    // Validate form before submission
     if (!validateForm()) {
-      toast.error(t('errors.validation'));
       return;
     }
 
+    // Prepare data for submission
     const submitData = { ...formData };
-    if (editingUser && !submitData.password) {
-      delete submitData.password;
-    }
 
-    userMutation.mutate(submitData);
+    if (editingUser) {
+      // For editing, only include password if it's provided
+      if (!submitData.password) {
+        delete submitData.password;
+      }
+      updateUserMutation.mutate({ id: editingUser.id, data: submitData });
+    } else {
+      // For creating, password is required
+      createUserMutation.mutate(submitData);
+    }
   };
 
-  const handleDelete = userId => {
+  const handleDelete = id => {
     if (window.confirm(t('user.deleteConfirm'))) {
-      deleteUserMutation.mutate(userId);
+      deleteUserMutation.mutate(id);
     }
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = field => e => {
     setFormData(prev => ({
       ...prev,
-      [field]: value,
+      [field]: e.target.value,
     }));
-
-    if (formErrors[field]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [field]: '',
-      }));
-    }
   };
 
-  const getRoleColor = role => {
-    switch (role) {
-      case 'admin':
-        return 'error';
-      case 'user':
-        return 'primary';
-      default:
-        return 'default';
-    }
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
   };
 
-  const getRoleIcon = role => {
-    switch (role) {
-      case 'admin':
-        return <AdminPanelSettings />;
-      case 'user':
-        return <Person />;
-      default:
-        return <Person />;
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.username.trim()) {
+      errors.username = t('user.usernameRequired');
+    } else if (formData.username.length < 3) {
+      errors.username = t('user.usernameMinLength');
     }
+
+    if (!formData.email.trim()) {
+      errors.email = t('user.emailRequired');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = t('user.emailInvalid');
+    }
+
+    if (!editingUser && !formData.password.trim()) {
+      errors.password = t('user.passwordRequired');
+    } else if (formData.password && formData.password.length < 8) {
+      errors.password = t('user.passwordMinLength');
+    }
+
+    if (!formData.role) {
+      errors.role = t('user.roleRequired');
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  if (isLoading) {
+  // Handle loading state
+  if (usersLoading) {
     return (
       <Box
         display='flex'
         justifyContent='center'
         alignItems='center'
         minHeight='400px'
+        flexDirection='column'
       >
-        <Typography>{t('common.loading')}</Typography>
+        <Box sx={{ position: 'relative', mb: 3 }}>
+          <LinearProgress size={80} thickness={4} />
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            <People sx={{ fontSize: 32, color: 'primary.main' }} />
+          </Box>
+        </Box>
+        <Typography variant='h5' color='textSecondary' sx={{ mb: 1 }}>
+          {t('common.loading')}
+        </Typography>
+        <Typography variant='body2' color='textSecondary'>
+          Loading users...
+        </Typography>
       </Box>
     );
   }
 
-  return (
-    <Box>
+  // Handle error state
+  if (usersError) {
+    return (
       <Box
         display='flex'
+        justifyContent='center'
         alignItems='center'
-        justifyContent='space-between'
-        mb={4}
+        minHeight='400px'
+        flexDirection='column'
       >
-        <Typography variant='h4' component='h1' sx={{ fontWeight: 'bold' }}>
-          {t('user.title')}
-        </Typography>
-        <Button
-          variant='contained'
-          startIcon={<Add />}
-          onClick={() => handleOpenDialog()}
-        >
-          {t('user.addUser')}
-        </Button>
+        <Box sx={{ textAlign: 'center', maxWidth: 500 }}>
+          <People sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
+          <Typography variant='h5' color='error.main' sx={{ mb: 2 }}>
+            Connection Error
+          </Typography>
+          <Typography variant='body1' color='textSecondary' sx={{ mb: 3 }}>
+            Unable to connect to the backend server. Please check if the server
+            is running.
+          </Typography>
+          <Typography variant='body2' color='textSecondary'>
+            This is normal if you&apos;re running the frontend without the
+            backend server.
+          </Typography>
+        </Box>
       </Box>
+    );
+  }
+
+  const usersData = users || [];
+  const totalStats = {
+    users: usersData.length,
+    admins: usersData.filter(user => user.role === 'admin').length,
+    regularUsers: usersData.filter(user => user.role === 'user').length,
+    activeUsers: usersData.filter(user => user.is_active !== false).length,
+  };
+
+  const statsCards = [
+    {
+      title: t('user.totalUsers'),
+      value: totalStats.users,
+      icon: <People sx={{ fontSize: 40, color: 'primary.main' }} />,
+      color: 'primary',
+      trend: '+8',
+      trendDirection: 'up',
+      delay: 0,
+    },
+    {
+      title: t('user.adminUsers'),
+      value: totalStats.admins,
+      icon: (
+        <AdminPanelSettings sx={{ fontSize: 40, color: 'secondary.main' }} />
+      ),
+      color: 'secondary',
+      trend: '+2',
+      trendDirection: 'up',
+      delay: 100,
+    },
+    {
+      title: t('user.regularUsers'),
+      value: totalStats.regularUsers,
+      icon: <Person sx={{ fontSize: 40, color: 'info.main' }} />,
+      color: 'info',
+      trend: '+6',
+      trendDirection: 'up',
+      delay: 200,
+    },
+    {
+      title: t('user.activeUsers'),
+      value: totalStats.activeUsers,
+      icon: <CheckCircle sx={{ fontSize: 40, color: 'success.main' }} />,
+      color: 'success',
+      trend: '+10%',
+      trendDirection: 'up',
+      delay: 300,
+    },
+  ];
+
+  const getRoleColor = role => {
+    const colorMap = {
+      admin: 'error',
+      user: 'primary',
+    };
+    return colorMap[role] || 'default';
+  };
+
+  const getRoleIcon = role => {
+    const iconMap = {
+      admin: <AdminPanelSettings />,
+      user: <Person />,
+    };
+    return iconMap[role] || <Person />;
+  };
+
+  return (
+    <Box sx={{ p: 0 }}>
+      {/* Header Section */}
+      <Fade in={animateCards} timeout={800}>
+        <Box sx={{ mb: 4 }}>
+          <Typography
+            variant='h3'
+            component='h1'
+            sx={{
+              fontWeight: 800,
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              mb: 2,
+            }}
+          >
+            {t('user.management')}
+          </Typography>
+          <Typography variant='h6' color='textSecondary' sx={{ mb: 3 }}>
+            {t('user.subtitle')}
+          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Divider sx={{ opacity: 0.3, flexGrow: 1, mr: 2 }} />
+            <Button
+              variant='contained'
+              startIcon={<Add />}
+              onClick={() => handleOpenDialog()}
+              sx={{
+                px: 3,
+                py: 1.5,
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: theme.shadows[8],
+                },
+              }}
+            >
+              {t('user.addNew')}
+            </Button>
+          </Box>
+        </Box>
+      </Fade>
+
+      {/* Stats Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {statsCards.map((card, index) => (
+          <Grid item xs={12} sm={6} md={3} key={index}>
+            <Grow in={animateCards} timeout={800 + card.delay}>
+              <Card
+                sx={{
+                  height: '100%',
+                  background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`,
+                  border: `1px solid ${theme.palette.divider}`,
+                  transition: 'all 0.3s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                    boxShadow: theme.shadows[12],
+                    borderColor:
+                      theme.palette[card.color]?.main ||
+                      theme.palette.primary.main,
+                  },
+                }}
+              >
+                <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                  <Box sx={{ mb: 2 }}>
+                    <Zoom in={animateCards} timeout={1000 + card.delay}>
+                      {card.icon}
+                    </Zoom>
+                  </Box>
+                  <Typography
+                    variant='h3'
+                    component='div'
+                    sx={{
+                      fontWeight: 700,
+                      color: theme.palette[card.color].main,
+                      mb: 1,
+                    }}
+                  >
+                    {card.value.toLocaleString()}
+                  </Typography>
+                  <Typography
+                    variant='body2'
+                    color='textSecondary'
+                    sx={{ mb: 2, fontWeight: 500 }}
+                  >
+                    {card.title}
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Chip
+                      icon={
+                        card.trendDirection === 'up' ? (
+                          <TrendingUp />
+                        ) : (
+                          <TrendingDown />
+                        )
+                      }
+                      label={card.trend}
+                      size='small'
+                      color={card.trendDirection === 'up' ? 'success' : 'error'}
+                      variant='outlined'
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grow>
+          </Grid>
+        ))}
+      </Grid>
 
       {/* Users Table */}
-      <TableContainer component={Box}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>{t('common.name')}</TableCell>
-              <TableCell>{t('common.email')}</TableCell>
-              <TableCell>{t('common.role')}</TableCell>
-              <TableCell>{t('common.created')}</TableCell>
-              <TableCell>{t('common.updated')}</TableCell>
-              <TableCell>{t('common.status')}</TableCell>
-              <TableCell>{t('common.actions')}</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} align='center'>
-                  <Typography>{t('common.loading')}</Typography>
-                </TableCell>
-              </TableRow>
-            ) : !users || users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align='center'>
-                  <Typography color='text.secondary'>
-                    {t('common.no')} {t('common.name')} {t('common.found')}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              users
-                .filter(
-                  user =>
-                    user && typeof user === 'object' && user.id && user.username
-                )
-                .map(user => {
-                  return (
-                    <TableRow key={user.id}>
+      <Slide direction='up' in={animateCards} timeout={1200}>
+        <Card
+          sx={{
+            background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`,
+            border: `1px solid ${theme.palette.divider}`,
+            transition: 'all 0.3s ease-in-out',
+            '&:hover': {
+              boxShadow: theme.shadows[8],
+            },
+          }}
+        >
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <People sx={{ fontSize: 32, color: 'primary.main', mr: 2 }} />
+              <Typography variant='h5' component='h2' sx={{ fontWeight: 700 }}>
+                {t('user.usersList')}
+              </Typography>
+            </Box>
+            <TableContainer component={Paper} sx={{ boxShadow: 'none' }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('user.username')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('user.email')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('user.role')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('user.status')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('user.actions')}
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {usersData.map(user => (
+                    <TableRow
+                      key={user.id}
+                      sx={{
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                          background: theme.palette.action.hover,
+                          transform: 'scale(1.01)',
+                        },
+                      }}
+                    >
                       <TableCell>
-                        <Box display='flex' alignItems='center'>
-                          <Person sx={{ mr: 1, color: 'primary.main' }} />
-                          <Typography
-                            variant='body1'
-                            sx={{ fontWeight: 'medium' }}
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Avatar
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              mr: 2,
+                              bgcolor:
+                                theme.palette[getRoleColor(user.role)].main,
+                            }}
                           >
-                            {user.username || 'N/A'}
+                            {getRoleIcon(user.role)}
+                          </Avatar>
+                          <Typography
+                            variant='subtitle2'
+                            sx={{ fontWeight: 600 }}
+                          >
+                            {user.username}
                           </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>{user.email || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Typography variant='body2' color='textSecondary'>
+                          {user.email}
+                        </Typography>
+                      </TableCell>
                       <TableCell>
                         <Chip
                           icon={getRoleIcon(user.role)}
-                          label={user.role || 'N/A'}
-                          color={getRoleColor(user.role)}
+                          label={t(`user.roles.${user.role}`)}
                           size='small'
+                          color={getRoleColor(user.role)}
+                          variant='outlined'
                         />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant='body2' color='text.secondary'>
-                          {user.created_at
-                            ? new Date(user.created_at).toLocaleDateString()
-                            : 'N/A'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant='body2' color='text.secondary'>
-                          {user.updated_at
-                            ? new Date(user.updated_at).toLocaleDateString()
-                            : 'N/A'}
-                        </Typography>
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={t('common.active')}
-                          color='success'
+                          icon={
+                            user.is_active !== false ? (
+                              <CheckCircle />
+                            ) : (
+                              <Warning />
+                            )
+                          }
+                          label={
+                            user.is_active !== false
+                              ? t('user.active')
+                              : t('user.inactive')
+                          }
                           size='small'
+                          color={
+                            user.is_active !== false ? 'success' : 'warning'
+                          }
+                          variant='outlined'
                         />
                       </TableCell>
                       <TableCell>
-                        <Box display='flex' gap={1}>
-                          <IconButton
-                            size='small'
-                            color='primary'
-                            onClick={() => handleOpenDialog(user)}
-                          >
-                            <Edit />
-                          </IconButton>
-                          <IconButton
-                            size='small'
-                            color='error'
-                            onClick={() => handleDelete(user.id)}
-                          >
-                            <Delete />
-                          </IconButton>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Tooltip title={t('user.edit')}>
+                            <IconButton
+                              size='small'
+                              color='secondary'
+                              onClick={() => handleOpenDialog(user)}
+                            >
+                              <Edit />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={t('user.delete')}>
+                            <IconButton
+                              size='small'
+                              color='error'
+                              onClick={() => handleDelete(user.id)}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       </TableCell>
                     </TableRow>
-                  );
-                })
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </Slide>
 
       {/* Add/Edit User Dialog */}
       <Dialog
-        open={dialogOpen}
+        open={openDialog}
         onClose={handleCloseDialog}
         maxWidth='sm'
         fullWidth
@@ -366,83 +716,95 @@ const UserManagement = () => {
         </DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent>
-            <TextField
-              fullWidth
-              label={t('common.username')}
-              value={formData.username}
-              onChange={e => handleInputChange('username', e.target.value)}
-              required
-              error={!!formErrors.username}
-              helperText={formErrors.username}
-              sx={{ mb: 2 }}
-            />
-
-            <TextField
-              fullWidth
-              label={t('common.email')}
-              type='email'
-              value={formData.email}
-              onChange={e => handleInputChange('email', e.target.value)}
-              required
-              error={!!formErrors.email}
-              helperText={formErrors.email}
-              sx={{ mb: 2 }}
-            />
-
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel id='role-label'>{t('common.role')}</InputLabel>
-              <Select
-                labelId='role-label'
-                value={formData.role}
-                label={t('common.role')}
-                onChange={e => handleInputChange('role', e.target.value)}
-                required
-                error={!!formErrors.role}
-              >
-                <MenuItem value='user'>
-                  <Box display='flex' alignItems='center'>
-                    <Person sx={{ mr: 1 }} />
-                    {t('common.user')}
-                  </Box>
-                </MenuItem>
-                <MenuItem value='admin'>
-                  <Box display='flex' alignItems='center'>
-                    <AdminPanelSettings sx={{ mr: 1 }} />
-                    {t('common.admin')}
-                  </Box>
-                </MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              fullWidth
-              label={editingUser ? t('user.newPassword') : t('common.password')}
-              type='password'
-              value={formData.password}
-              onChange={e => handleInputChange('password', e.target.value)}
-              required={!editingUser}
-              error={!!formErrors.password}
-              helperText={formErrors.password}
-            />
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label={t('user.username')}
+                  value={formData.username}
+                  onChange={handleInputChange('username')}
+                  required
+                  error={!!formErrors.username}
+                  helperText={formErrors.username}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label={t('user.email')}
+                  type='email'
+                  value={formData.email}
+                  onChange={handleInputChange('email')}
+                  required
+                  error={!!formErrors.email}
+                  helperText={formErrors.email}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <FormControl fullWidth error={!!formErrors.role}>
+                  <InputLabel>{t('user.role')}</InputLabel>
+                  <Select
+                    value={formData.role}
+                    onChange={handleInputChange('role')}
+                    label={t('user.role')}
+                  >
+                    <MenuItem value='user'>{t('user.roles.user')}</MenuItem>
+                    <MenuItem value='admin'>{t('user.roles.admin')}</MenuItem>
+                  </Select>
+                  {formErrors.role && (
+                    <Typography
+                      variant='caption'
+                      color='error'
+                      sx={{ mt: 0.5, display: 'block' }}
+                    >
+                      {formErrors.role}
+                    </Typography>
+                  )}
+                </FormControl>
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  label={t('user.password')}
+                  type='password'
+                  value={formData.password}
+                  onChange={handleInputChange('password')}
+                  required={!editingUser} // Only required for new users
+                  error={!!formErrors.password}
+                  helperText={formErrors.password}
+                />
+              </Grid>
+            </Grid>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog}>{t('common.cancel')}</Button>
             <Button
               type='submit'
               variant='contained'
-              disabled={userMutation.isLoading}
+              disabled={
+                createUserMutation.isLoading || updateUserMutation.isLoading
+              }
             >
-              {userMutation.isLoading ? (
-                <Typography>{t('common.saving')}</Typography>
-              ) : editingUser ? (
-                t('common.update')
-              ) : (
-                t('common.create')
-              )}
+              {editingUser ? t('common.update') : t('common.create')}
             </Button>
           </DialogActions>
         </form>
       </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

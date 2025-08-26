@@ -1,7 +1,7 @@
 {
-  "short_name": "Insurance PDF",
-  "name": "Insurance PDF Analysis System",
-  "description": "AI-powered PDF document analysis and question answering system",
+  "short_name": "Insurance Assistant",
+  "name": "AI-powered Insurance Assistant System",
+  "description": "AI-powered Insurance Assistant System - Intelligent insurance management and customer support platform",
   "icons": [],
   "start_url": ".",
   "display": "standalone",

@@ -17,6 +17,7 @@ import {
   MenuItem,
   useTheme,
   useMediaQuery,
+  Tooltip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -26,11 +27,12 @@ import {
   Description,
   SmartToy,
   Storage,
-  HealthAndSafety,
   AccountCircle,
   Logout,
   QuestionAnswer,
   Chat,
+  ChevronLeft,
+  ChevronRight,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -40,9 +42,11 @@ import { setSidebarOpen } from '../store/slices/uiSlice';
 import LanguageSwitcher from './LanguageSwitcher';
 
 const drawerWidth = 240;
+const collapsedDrawerWidth = 64;
 
 const Layout = ({ children }) => {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
@@ -55,6 +59,10 @@ const Layout = ({ children }) => {
 
   const handleDrawerToggle = () => {
     dispatch(setSidebarOpen(!sidebarOpen));
+  };
+
+  const handleSidebarCollapse = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
   };
 
   const handleProfileMenuOpen = event => {
@@ -120,13 +128,11 @@ const Layout = ({ children }) => {
       path: '/vectorstore',
       roles: ['admin'],
     },
-    {
-      text: t('navigation.systemHealth'),
-      icon: <HealthAndSafety />,
-      path: '/health',
-      roles: ['admin'],
-    },
   ];
+
+  const currentDrawerWidth = sidebarCollapsed
+    ? collapsedDrawerWidth
+    : drawerWidth;
 
   const drawer = (
     <Box>
@@ -134,15 +140,29 @@ const Layout = ({ children }) => {
         sx={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'space-between',
           p: 2,
           borderBottom: 1,
           borderColor: 'divider',
+          minHeight: 64,
         }}
       >
-        <Typography variant='h6' component='div' sx={{ fontWeight: 'bold' }}>
-          Insurance System
-        </Typography>
+        {!sidebarCollapsed && (
+          <Typography variant='h6' component='div' sx={{ fontWeight: 'bold' }}>
+            Insurance Assistant
+          </Typography>
+        )}
+        <IconButton
+          onClick={handleSidebarCollapse}
+          sx={{
+            color: 'text.secondary',
+            '&:hover': {
+              color: 'primary.main',
+            },
+          }}
+        >
+          {sidebarCollapsed ? <ChevronRight /> : <ChevronLeft />}
+        </IconButton>
       </Box>
       <Divider />
       <List>
@@ -150,32 +170,42 @@ const Layout = ({ children }) => {
           .filter(item => item.roles.includes(user?.role))
           .map(item => (
             <ListItem key={item.text} disablePadding>
-              <ListItemButton
-                selected={location.pathname === item.path}
-                onClick={() => {
-                  navigate(item.path);
-                  if (isMobile) dispatch(setSidebarOpen(false));
-                }}
-                sx={{
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                  },
-                }}
+              <Tooltip
+                title={sidebarCollapsed ? item.text : ''}
+                placement='right'
+                disableHoverListener={!sidebarCollapsed}
               >
-                <ListItemIcon
+                <ListItemButton
+                  selected={location.pathname === item.path}
+                  onClick={() => {
+                    navigate(item.path);
+                    if (isMobile) dispatch(setSidebarOpen(false));
+                  }}
                   sx={{
-                    color:
-                      location.pathname === item.path ? 'inherit' : 'inherit',
+                    minHeight: 48,
+                    justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                    px: sidebarCollapsed ? 1 : 3,
+                    '&.Mui-selected': {
+                      backgroundColor: 'primary.main',
+                      color: 'primary.contrastText',
+                      '&:hover': {
+                        backgroundColor: 'primary.dark',
+                      },
+                    },
                   }}
                 >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItemButton>
+                  <ListItemIcon
+                    sx={{
+                      color: 'inherit',
+                      minWidth: sidebarCollapsed ? 0 : 40,
+                      mr: sidebarCollapsed ? 0 : 3,
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  {!sidebarCollapsed && <ListItemText primary={item.text} />}
+                </ListItemButton>
+              </Tooltip>
             </ListItem>
           ))}
       </List>
@@ -187,8 +217,12 @@ const Layout = ({ children }) => {
       <AppBar
         position='fixed'
         sx={{
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          ml: { md: `${drawerWidth}px` },
+          width: { md: `calc(100% - ${currentDrawerWidth}px)` },
+          ml: { md: `${currentDrawerWidth}px` },
+          transition: theme.transitions.create(['margin', 'width'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
         }}
       >
         <Toolbar>
@@ -229,7 +263,7 @@ const Layout = ({ children }) => {
 
       <Box
         component='nav'
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+        sx={{ width: { md: currentDrawerWidth }, flexShrink: { md: 0 } }}
       >
         <Drawer
           variant='temporary'
@@ -254,7 +288,12 @@ const Layout = ({ children }) => {
             display: { xs: 'none', md: 'block' },
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
-              width: drawerWidth,
+              width: currentDrawerWidth,
+              transition: theme.transitions.create('width', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.enteringScreen,
+              }),
+              overflowX: 'hidden',
             },
           }}
           open
@@ -268,7 +307,11 @@ const Layout = ({ children }) => {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
+          width: { md: `calc(100% - ${currentDrawerWidth}px)` },
+          transition: theme.transitions.create(['margin', 'width'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
         }}
       >
         <Toolbar />

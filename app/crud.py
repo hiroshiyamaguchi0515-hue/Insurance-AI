@@ -50,6 +50,16 @@ def update_user(db: Session, user_id: int, user_update: schemas.UserUpdate):
     db.refresh(db_user)
     return db_user
 
+def delete_user(db: Session, user_id: int):
+    """Delete a user by ID"""
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not db_user:
+        return None
+    
+    db.delete(db_user)
+    db.commit()
+    return db_user
+
 # Chat CRUD operations
 def create_chat_conversation(db: Session, user_id: int, company_id: int, title: str, chat_type: str):
     db_conversation = models.ChatConversation(

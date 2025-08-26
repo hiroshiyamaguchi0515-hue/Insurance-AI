@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Box,
@@ -16,18 +16,26 @@ import {
   ListItemText,
   Chip,
   CircularProgress,
-  Alert,
   List,
   ListItem,
-  Paper,
   LinearProgress,
+  useTheme,
+  Fade,
+  Slide,
+  Grow,
+  Zoom,
+  Divider,
+  Avatar,
+  Tooltip,
 } from '@mui/material';
 import {
   Delete,
   Business,
   Description,
   Upload,
-  Refresh,
+  CloudUpload,
+  TrendingUp,
+  TrendingDown,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useDropzone } from 'react-dropzone';
@@ -39,14 +47,22 @@ import { formatDate } from '../utils/dateUtils';
 
 const PDFManagement = () => {
   const { user } = useSelector(state => state.auth);
+  const theme = useTheme();
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pdfToDelete, setPdfToDelete] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [animateCards, setAnimateCards] = useState(false);
 
   const queryClient = useQueryClient();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    // Trigger animations after component mounts
+    const timer = setTimeout(() => setAnimateCards(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Get companies
   const { data: companies, isLoading: companiesLoading } = useQuery(
@@ -56,17 +72,12 @@ const PDFManagement = () => {
   );
 
   // Get PDFs for selected company
-  const {
-    data: pdfs,
-    isLoading: pdfsLoading,
-    refetch: refetchPDFs,
-  } = useQuery(
+  const { data: pdfs, isLoading: pdfsLoading } = useQuery(
     ['companyPDFs', selectedCompany?.id],
     () =>
       api.get(endpoints.companyPDFs(selectedCompany.id)).then(res => res.data),
     { enabled: !!selectedCompany }
   );
-
   // Upload PDF mutation
   const uploadMutation = useMutation(
     async formData => {
@@ -104,7 +115,10 @@ const PDFManagement = () => {
 
   // Delete PDF mutation
   const deleteMutation = useMutation(
-    filename => api.delete(endpoints.removePDF(selectedCompany.id, filename)),
+    async pdfId => {
+      const response = await api.delete(endpoints.deletePDF(pdfId));
+      return response.data;
+    },
     {
       onSuccess: () => {
         toast.success(t('pdf.deleteSuccess'));
@@ -119,26 +133,20 @@ const PDFManagement = () => {
     }
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: {
-      'application/pdf': ['.pdf'],
-    },
-    maxFiles: 1,
-    onDrop: acceptedFiles => {
-      if (acceptedFiles.length > 0) {
-        handleUpload(acceptedFiles[0]);
-      }
-    },
-  });
+  const handleCompanySelect = company => {
+    setSelectedCompany(company);
+  };
 
-  const handleUpload = file => {
+  const handleUpload = files => {
     if (!selectedCompany) {
       toast.error(t('pdf.selectCompanyFirst'));
       return;
     }
 
     const formData = new FormData();
-    formData.append('file', file);
+    files.forEach(file => {
+      formData.append('files', file);
+    });
 
     uploadMutation.mutate(formData);
   };
@@ -150,205 +158,351 @@ const PDFManagement = () => {
 
   const confirmDelete = () => {
     if (pdfToDelete) {
-      deleteMutation.mutate(pdfToDelete.filename);
+      deleteMutation.mutate(pdfToDelete.id);
     }
   };
 
-  const handleCompanySelect = company => {
-    setSelectedCompany(company);
-  };
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: handleUpload,
+    accept: {
+      'application/pdf': ['.pdf'],
+    },
+    multiple: true,
+  });
 
-  const formatFileSize = bytes => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-  };
+  const companiesData = companies || [];
+
+  const statsCards = [
+    {
+      title: t('pdf.totalCompanies'),
+      value: companiesData.length,
+      icon: <Business sx={{ fontSize: 40, color: 'primary.main' }} />,
+      color: 'primary',
+      trend: '+2',
+      trendDirection: 'up',
+      delay: 0,
+    },
+    {
+      title: t('pdf.totalDocuments'),
+      value: companiesData.reduce((acc, company) => acc + company.pdf_count, 0),
+      icon: <Description sx={{ fontSize: 40, color: 'secondary.main' }} />,
+      color: 'secondary',
+      trend: '+15%',
+      trendDirection: 'up',
+      delay: 100,
+    },
+  ];
 
   return (
-    <Box>
-      <Typography
-        variant='h4'
-        component='h1'
-        sx={{ mb: 4, fontWeight: 'bold' }}
-      >
-        {t('pdf.title')}
-      </Typography>
+    <Box sx={{ p: 0 }}>
+      {/* Header Section */}
+      <Fade in={animateCards} timeout={800}>
+        <Box sx={{ mb: 4 }}>
+          <Typography
+            variant='h3'
+            component='h1'
+            sx={{
+              fontWeight: 800,
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              mb: 2,
+            }}
+          >
+            {t('pdf.title')}
+          </Typography>
+          <Typography variant='h6' color='textSecondary' sx={{ mb: 3 }}>
+            {t('pdf.subtitle')}
+          </Typography>
+          <Divider sx={{ opacity: 0.3 }} />
+        </Box>
+      </Fade>
+
+      {/* Stats Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {statsCards.map((card, index) => (
+          <Grid item xs={12} sm={6} md={6} key={index}>
+            <Grow in={animateCards} timeout={800 + card.delay}>
+              <Card
+                sx={{
+                  height: '100%',
+                  background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`,
+                  border: `1px solid ${theme.palette.divider}`,
+                  transition: 'all 0.3s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                    boxShadow: theme.shadows[12],
+                    borderColor:
+                      theme.palette[card.color]?.main ||
+                      theme.palette.primary.main,
+                  },
+                }}
+              >
+                <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                  <Box sx={{ mb: 2 }}>
+                    <Zoom in={animateCards} timeout={1000 + card.delay}>
+                      {card.icon}
+                    </Zoom>
+                  </Box>
+                  <Typography
+                    variant='h3'
+                    component='div'
+                    sx={{
+                      fontWeight: 700,
+                      color: theme.palette[card.color].main,
+                      mb: 1,
+                    }}
+                  >
+                    {card.value.toLocaleString()}
+                  </Typography>
+                  <Typography
+                    variant='body2'
+                    color='textSecondary'
+                    sx={{ mb: 2, fontWeight: 500 }}
+                  >
+                    {card.title}
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Chip
+                      icon={
+                        card.trendDirection === 'up' ? (
+                          <TrendingUp />
+                        ) : (
+                          <TrendingDown />
+                        )
+                      }
+                      label={card.trend}
+                      size='small'
+                      color={card.trendDirection === 'up' ? 'success' : 'error'}
+                      variant='outlined'
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grow>
+          </Grid>
+        ))}
+      </Grid>
 
       {/* Company Selection */}
-      <Card sx={{ mb: 4 }}>
-        <CardContent>
-          <Typography variant='h6' gutterBottom>
-            {t('pdf.selectCompany')}
-          </Typography>
-
-          {companiesLoading ? (
-            <Box display='flex' justifyContent='center' p={3}>
-              <CircularProgress />
-              <Typography variant='body2' sx={{ ml: 2, alignSelf: 'center' }}>
-                {t('pdf.loadingCompanies')}
+      <Slide direction='up' in={animateCards} timeout={1000}>
+        <Card
+          sx={{
+            background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`,
+            border: `1px solid ${theme.palette.divider}`,
+            transition: 'all 0.3s ease-in-out',
+            '&:hover': {
+              boxShadow: theme.shadows[8],
+            },
+          }}
+        >
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <Business sx={{ fontSize: 32, color: 'primary.main', mr: 2 }} />
+              <Typography variant='h5' component='h2' sx={{ fontWeight: 700 }}>
+                {t('pdf.selectCompany')}
               </Typography>
             </Box>
-          ) : companies?.length > 0 ? (
-            <Grid container spacing={2}>
-              {companies.map(company => (
-                <Grid item key={company.id}>
-                  <Button
-                    variant={
-                      selectedCompany?.id === company.id
-                        ? 'contained'
-                        : 'outlined'
-                    }
-                    onClick={() => handleCompanySelect(company)}
-                    startIcon={<Business />}
-                  >
-                    {company.name}
-                  </Button>
-                </Grid>
-              ))}
-            </Grid>
-          ) : (
-            <Box sx={{ textAlign: 'center', py: 3 }}>
-              <Business sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-              <Typography variant='body2' color='textSecondary'>
-                {t('pdf.noCompanies')}
-              </Typography>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
 
+            {companiesLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : companiesData.length > 0 ? (
+              <Grid container spacing={2}>
+                {companiesData.map(company => (
+                  <Grid item key={company.id}>
+                    <Button
+                      variant={
+                        selectedCompany?.id === company.id
+                          ? 'contained'
+                          : 'outlined'
+                      }
+                      onClick={() => handleCompanySelect(company)}
+                      startIcon={<Business />}
+                      sx={{
+                        px: 3,
+                        py: 1.5,
+                        borderRadius: 2,
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: theme.shadows[4],
+                        },
+                      }}
+                    >
+                      {company.name}
+                    </Button>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Business
+                  sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }}
+                />
+                <Typography variant='body1' color='textSecondary'>
+                  {t('pdf.noCompanies')}
+                </Typography>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      </Slide>
+
+      {/* Documents Section */}
       {selectedCompany && (
-        <>
-          {/* Upload Section */}
-          <Card sx={{ mb: 4 }}>
-            <CardContent>
+        <Slide direction='up' in={animateCards} timeout={1200}>
+          <Card
+            sx={{
+              mt: 3,
+              background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`,
+              border: `1px solid ${theme.palette.divider}`,
+              transition: 'all 0.3s ease-in-out',
+              '&:hover': {
+                boxShadow: theme.shadows[8],
+              },
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
               <Box
-                display='flex'
-                alignItems='center'
-                justifyContent='space-between'
-                mb={2}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  mb: 3,
+                }}
               >
-                <Typography variant='h6'>{t('pdf.uploadTitle')}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Description
+                    sx={{ fontSize: 32, color: 'secondary.main', mr: 2 }}
+                  />
+                  <Typography
+                    variant='h5'
+                    component='h2'
+                    sx={{ fontWeight: 700 }}
+                  >
+                    {t('pdf.documentsFor', {
+                      companyName: selectedCompany.name,
+                    })}
+                  </Typography>
+                </Box>
                 <Button
                   variant='contained'
                   startIcon={<Upload />}
                   onClick={() => setUploadDialogOpen(true)}
+                  sx={{
+                    px: 3,
+                    py: 1.5,
+                    borderRadius: 2,
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: theme.shadows[8],
+                    },
+                  }}
                 >
-                  {t('pdf.uploadPDF')}
+                  {t('pdf.uploadDocuments')}
                 </Button>
               </Box>
 
-              <Typography variant='body2' color='textSecondary'>
-                {t('pdf.dragDrop')}
-              </Typography>
-
-              <Box
-                {...getRootProps()}
-                sx={{
-                  border: '2px dashed',
-                  borderColor: isDragActive ? 'primary.main' : 'grey.300',
-                  borderRadius: 2,
-                  p: 4,
-                  textAlign: 'center',
-                  mt: 2,
-                  backgroundColor: isDragActive ? 'primary.light' : 'grey.50',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    borderColor: 'primary.main',
-                    backgroundColor: 'primary.light',
-                  },
-                }}
-              >
-                <input {...getInputProps()} />
-                <Upload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-                <Typography variant='h6' gutterBottom>
-                  {isDragActive ? t('pdf.dropHere') : t('pdf.dragDrop')}
-                </Typography>
-                <Typography variant='body2' color='textSecondary'>
-                  {t('pdf.orClick')}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-
-          {/* Documents List */}
-          <Card>
-            <CardContent>
-              <Box
-                display='flex'
-                alignItems='center'
-                justifyContent='space-between'
-                mb={2}
-              >
-                <Typography variant='h6'>
-                  {t('pdf.documentsFor', { companyName: selectedCompany.name })}
-                </Typography>
-                <IconButton size='small' onClick={() => refetchPDFs()}>
-                  <Refresh />
-                </IconButton>
-              </Box>
-
               {pdfsLoading ? (
-                <Box display='flex' justifyContent='center' p={3}>
-                  <CircularProgress sx={{ width: '100%' }} />
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress />
                 </Box>
               ) : pdfs?.pdf_files?.length > 0 ? (
                 <List>
-                  {pdfs.pdf_files.map(pdf => (
+                  {pdfs?.pdf_files.map(pdf => (
                     <ListItem
                       key={pdf.id}
                       sx={{
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                        mb: 1,
+                        mb: 2,
+                        p: 2,
+                        borderRadius: 2,
+                        border: `1px solid ${theme.palette.divider}`,
+                        background: theme.palette.background.default,
+                        transition: 'all 0.2s ease-in-out',
                         '&:hover': {
-                          backgroundColor: 'action.hover',
+                          background: theme.palette.action.hover,
+                          transform: 'scale(1.02)',
                         },
                       }}
                     >
                       <ListItemIcon>
-                        <Description color='primary' />
+                        <Avatar
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            bgcolor: theme.palette.secondary.main,
+                          }}
+                        >
+                          <Description />
+                        </Avatar>
                       </ListItemIcon>
                       <ListItemText
-                        primary={pdf.filename}
-                        secondary={`${t('pdf.uploaded')} ${formatDate(pdf.upload_timestamp)} • ${formatFileSize(pdf.file_size)}`}
+                        primary={
+                          <Typography
+                            variant='subtitle1'
+                            sx={{ fontWeight: 600 }}
+                          >
+                            {pdf.filename}
+                          </Typography>
+                        }
+                        secondary={
+                          <Box>
+                            <Typography
+                              variant='body2'
+                              color='textSecondary'
+                              sx={{ mb: 1 }}
+                            >
+                              {t('pdf.fileSize')}: {pdf.file_size} •{' '}
+                              {t('pdf.uploadDate')}:{' '}
+                              {formatDate(pdf.upload_timestamp)}
+                            </Typography>
+                          </Box>
+                        }
                       />
-                      <Box display='flex' gap={1} alignItems='center'>
-                        <Chip
-                          label={t('pdf.available')}
-                          color='success'
-                          size='small'
-                        />
-                        <IconButton
-                          size='small'
-                          color='error'
-                          onClick={() => handleDelete(pdf)}
-                        >
-                          <Delete />
-                        </IconButton>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Tooltip title={t('pdf.delete')}>
+                          <IconButton
+                            size='small'
+                            color='error'
+                            onClick={() => handleDelete(pdf)}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                     </ListItem>
                   ))}
                 </List>
               ) : (
-                <Paper sx={{ p: 4, textAlign: 'center' }}>
+                <Box sx={{ textAlign: 'center', py: 4 }}>
                   <Description
-                    sx={{ fontSize: 64, color: 'grey.400', mb: 2 }}
+                    sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }}
                   />
-                  <Typography variant='h6' color='textSecondary' gutterBottom>
+                  <Typography
+                    variant='body1'
+                    color='textSecondary'
+                    sx={{ mb: 2 }}
+                  >
                     {t('pdf.noDocuments')}
                   </Typography>
                   <Typography variant='body2' color='textSecondary'>
                     {t('pdf.startUpload')}
                   </Typography>
-                </Paper>
+                </Box>
               )}
             </CardContent>
           </Card>
-        </>
+        </Slide>
       )}
 
       {/* Upload Dialog */}
@@ -360,42 +514,39 @@ const PDFManagement = () => {
       >
         <DialogTitle>{t('pdf.uploadTitle')}</DialogTitle>
         <DialogContent>
-          <Typography variant='body2' color='textSecondary' sx={{ mb: 2 }}>
-            {t('pdf.company')}: <strong>{selectedCompany?.name}</strong>
-          </Typography>
-
-          {uploadProgress > 0 && (
-            <Box sx={{ mb: 2 }}>
-              <LinearProgress variant='determinate' value={uploadProgress} />
-              <Typography variant='body2' sx={{ mt: 1 }}>
-                {t('pdf.uploading')} {uploadProgress}%
-              </Typography>
-            </Box>
-          )}
-
           <Box
             {...getRootProps()}
             sx={{
-              border: '2px dashed',
-              borderColor: 'primary.main',
+              border: `2px dashed ${isDragActive ? theme.palette.primary.main : theme.palette.divider}`,
               borderRadius: 2,
               p: 4,
               textAlign: 'center',
               cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out',
               '&:hover': {
-                backgroundColor: 'primary.light',
+                borderColor: theme.palette.primary.main,
+                background: theme.palette.action.hover,
               },
             }}
           >
             <input {...getInputProps()} />
-            <Upload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-            <Typography variant='h6' gutterBottom>
-              {t('pdf.dropHere')}
+            <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+            <Typography variant='h6' sx={{ mb: 1 }}>
+              {isDragActive ? t('pdf.dropHere') : t('pdf.dragDrop')}
             </Typography>
             <Typography variant='body2' color='textSecondary'>
               {t('pdf.selectFile')}
             </Typography>
           </Box>
+
+          {uploadProgress > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant='body2' sx={{ mb: 1 }}>
+                {t('pdf.uploading')} {uploadProgress}%
+              </Typography>
+              <LinearProgress variant='determinate' value={uploadProgress} />
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setUploadDialogOpen(false)}>
@@ -408,15 +559,17 @@ const PDFManagement = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
+        maxWidth='sm'
+        fullWidth
       >
         <DialogTitle>{t('pdf.deleteConfirmTitle')}</DialogTitle>
         <DialogContent>
           <Typography>
             {t('pdf.deleteConfirm', { filename: pdfToDelete?.filename })}
           </Typography>
-          <Alert severity='warning' sx={{ mt: 2 }}>
+          <Typography variant='body2' color='textSecondary' sx={{ mt: 1 }}>
             {t('pdf.deleteWarning')}
-          </Alert>
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>

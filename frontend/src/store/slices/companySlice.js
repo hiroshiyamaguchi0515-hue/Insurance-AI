@@ -6,7 +6,7 @@ export const fetchCompanies = createAsyncThunk(
   'company/fetchCompanies',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get(endpoints.companies);
+      const response = await api.get(endpoints.adminCompanies);
       return response.data;
     } catch (error) {
       return rejectWithValue('Failed to fetch companies');
@@ -30,7 +30,7 @@ export const createCompany = createAsyncThunk(
   'company/createCompany',
   async (companyData, { rejectWithValue }) => {
     try {
-      const response = await api.post(endpoints.companies, companyData);
+      const response = await api.post(endpoints.adminCompanies, companyData);
       return response.data;
     } catch (error) {
       return rejectWithValue('Failed to create company');

@@ -1,15 +1,16 @@
-# PDF QA API with Agents
+# AI-powered Insurance Assistant System
 
-A secure, AI-powered PDF Question Answering API with multi-company support, featuring advanced authentication, rate limiting, and comprehensive error handling.
+A secure, intelligent AI-powered insurance assistance platform with multi-company support, featuring advanced authentication, AI-driven policy analysis, and comprehensive customer support capabilities.
 
 ## 🚀 Features
 
-- **Multi-Company Support**: Separate knowledge bases for different companies
-- **AI-Powered QA**: Uses OpenAI GPT models for intelligent question answering
-- **Agent System**: Conversational agents with memory and reasoning capabilities
+- **Multi-Company Support**: Separate knowledge bases for different insurance companies
+- **AI-Powered Insurance Assistant**: Uses OpenAI GPT models for intelligent insurance policy assistance
+- **Intelligent Agent System**: Conversational AI agents with memory and reasoning capabilities
 - **Secure Authentication**: JWT-based authentication with role-based access control
-- **Rate Limiting**: Built-in rate limiting to prevent abuse
-- **File Upload Security**: Secure PDF upload with validation and size limits
+- **Policy Analysis**: AI-powered analysis of insurance policies, contracts, and coverage documents
+- **24/7 AI Support**: Round-the-clock intelligent assistance for insurance queries
+- **Document Management**: Secure insurance document handling with AI analysis
 - **Comprehensive Logging**: Detailed logging for monitoring and debugging
 - **Database Migrations**: Alembic-based database schema management
 
@@ -23,6 +24,7 @@ A secure, AI-powered PDF Question Answering API with multi-company support, feat
 - File upload security with size and type validation
 - CORS protection
 - Trusted host middleware
+- HIPAA-compliant data handling
 - Comprehensive error handling without information leakage
 
 ## 📋 Prerequisites

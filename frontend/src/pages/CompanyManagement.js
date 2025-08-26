@@ -1,215 +1,205 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
+  Grid,
+  Card,
+  CardContent,
   Button,
+  TextField,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
-  Grid,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Paper,
   IconButton,
   Chip,
+  Avatar,
+  useTheme,
+  Fade,
+  Slide,
+  Divider,
+  LinearProgress,
   Alert,
-  FormControl,
-  FormHelperText,
-  MenuItem,
-  Paper,
-  InputLabel,
-  Select,
+  Snackbar,
+  Tooltip,
 } from '@mui/material';
-import { Add, Edit, Delete, Business, Warning } from '@mui/icons-material';
+import {
+  Add,
+  Edit,
+  Delete,
+  Business,
+  Description,
+  SmartToy,
+  QuestionAnswer,
+} from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { api, endpoints } from '../services/api';
-import toast from 'react-hot-toast';
-import { parseApiError } from '../utils/errorHandler';
-import { useTranslation } from 'react-i18next';
 
 const CompanyManagement = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const queryClient = useQueryClient();
+  const [animateCards, setAnimateCards] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
   const [editingCompany, setEditingCompany] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    model_name: '',
-    temperature: 0.1,
-    max_tokens: 1000,
+    description: '',
+    model_name: 'gpt-4',
+    temperature: 0.7,
   });
-  const [formErrors, setFormErrors] = useState({});
-  const [openaiModels, setOpenaiModels] = useState([]);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
-  const queryClient = useQueryClient();
-  const { t } = useTranslation();
+  // Fetch companies with error handling
+  const {
+    data: companies,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['companies'],
+    queryFn: () => api.get(endpoints.adminCompanies).then(res => res.data),
+    retry: 1,
+    retryDelay: 1000,
+  });
 
-  // Helper function to safely get count values
-  const getSafeCount = (value, defaultValue = 0) => {
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') {
-      const parsed = parseInt(value, 10);
-      return isNaN(parsed) ? defaultValue : parsed;
-    }
-    return defaultValue;
-  };
-
-  // Fetch companies
-  const { data: companies, isLoading } = useQuery('companies', () =>
-    api.get(endpoints.adminCompanies).then(res => {
-      console.log('Companies API response:', res.data);
-      return res.data;
-    })
-  );
-
-  // Fetch OpenAI models
-  const { isLoading: modelsLoading } = useQuery(
-    'openaiModels',
-    () => api.get(endpoints.openaiModels).then(res => res.data),
-    {
-      onSuccess: data => {
-        setOpenaiModels(data.models || []);
-      },
-      onError: error => {
-        const errorMessage = parseApiError(error);
-        toast.error(errorMessage);
-      },
-    }
-  );
-
-  // Create/Update company mutation
-  const companyMutation = useMutation(
-    data => {
-      if (editingCompany) {
-        return api.patch(`/companies/${editingCompany.id}`, data);
-      } else {
-        return api.post(endpoints.adminCompanies, data);
-      }
+  // Mutations
+  const createCompanyMutation = useMutation({
+    mutationFn: data => api.post(endpoints.adminCompanies, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['companies']);
+      setSnackbar({
+        open: true,
+        message: t('company.createSuccess'),
+        severity: 'success',
+      });
+      handleCloseDialog();
     },
-    {
-      onSuccess: () => {
-        toast.success(
-          editingCompany
-            ? t('company.updateSuccess')
-            : t('company.createSuccess')
-        );
-        queryClient.invalidateQueries('companies');
-        handleCloseDialog();
-      },
-      onError: error => {
-        const errorMessage = parseApiError(error);
-        toast.error(errorMessage);
-      },
-    }
-  );
+    onError: () => {
+      setSnackbar({
+        open: true,
+        message: t('company.createError'),
+        severity: 'error',
+      });
+    },
+  });
 
-  // Delete company mutation
-  const deleteMutation = useMutation(
-    companyId => api.delete(`${endpoints.adminCompanies}/${companyId}`),
-    {
-      onSuccess: () => {
-        toast.success(t('company.deleteSuccess'));
-        queryClient.invalidateQueries('companies');
-      },
-      onError: error => {
-        const errorMessage = parseApiError(error);
-        toast.error(errorMessage);
-      },
-    }
-  );
+  const updateCompanyMutation = useMutation({
+    mutationFn: ({ id, data }) =>
+      api.patch(`${endpoints.adminCompanies}/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['companies']);
+      setSnackbar({
+        open: true,
+        message: t('company.updateSuccess'),
+        severity: 'success',
+      });
+      handleCloseDialog();
+    },
+    onError: () => {
+      setSnackbar({
+        open: true,
+        message: t('company.updateError'),
+        severity: 'error',
+      });
+    },
+  });
 
-  const validateForm = () => {
-    const errors = {};
+  const deleteCompanyMutation = useMutation({
+    mutationFn: id => api.delete(`${endpoints.adminCompanies}/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['companies']);
+      setSnackbar({
+        open: true,
+        message: t('company.deleteSuccess'),
+        severity: 'success',
+      });
+    },
+    onError: () => {
+      setSnackbar({
+        open: true,
+        message: t('company.deleteError'),
+        severity: 'error',
+      });
+    },
+  });
 
-    if (!formData.name.trim()) {
-      errors.name = t('company.nameRequired');
-    }
-
-    if (!formData.model_name) {
-      errors.model_name = t('company.modelRequired');
-    }
-
-    if (formData.temperature < 0 || formData.temperature > 2) {
-      errors.temperature = t('company.temperatureRange');
-    }
-
-    if (formData.max_tokens < 1 || formData.max_tokens > 4000) {
-      errors.max_tokens = t('company.maxTokensRange');
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+  useEffect(() => {
+    // Trigger animations after component mounts
+    const timer = setTimeout(() => setAnimateCards(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleOpenDialog = (company = null) => {
     if (company) {
       setEditingCompany(company);
       setFormData({
         name: company.name,
-        model_name: company.model_name,
-        temperature: company.temperature,
-        max_tokens: company.max_tokens,
+        description: company.description,
+        model_name: company.model_name || 'gpt-4',
+        temperature: company.temperature || 0.7,
       });
     } else {
       setEditingCompany(null);
       setFormData({
         name: '',
-        model_name: '',
-        temperature: 0.1,
-        max_tokens: 1000,
+        description: '',
+        model_name: 'gpt-4',
+        temperature: 0.7,
       });
     }
-    setFormErrors({});
-    setDialogOpen(true);
+    setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
-    setDialogOpen(false);
+    setOpenDialog(false);
     setEditingCompany(null);
     setFormData({
       name: '',
-      model_name: '',
-      temperature: 0.1,
-      max_tokens: 1000,
+      description: '',
+      model_name: 'gpt-4',
+      temperature: 0.7,
     });
-    setFormErrors({});
   };
 
   const handleSubmit = e => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      toast.error('Please fix the form errors before submitting');
-      return;
+    if (editingCompany) {
+      updateCompanyMutation.mutate({ id: editingCompany.id, data: formData });
+    } else {
+      createCompanyMutation.mutate(formData);
     }
-
-    companyMutation.mutate(formData);
   };
 
-  const handleDelete = companyId => {
+  const handleDelete = id => {
     if (window.confirm(t('company.deleteConfirm'))) {
-      deleteMutation.mutate(companyId);
+      deleteCompanyMutation.mutate(id);
     }
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = field => e => {
     setFormData(prev => ({
       ...prev,
-      [field]: value,
+      [field]: e.target.value,
     }));
-
-    // Clear error when user starts typing/selecting
-    if (formErrors[field]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [field]: '',
-      }));
-    }
   };
 
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  // Handle loading state
   if (isLoading) {
     return (
       <Box
@@ -217,144 +207,284 @@ const CompanyManagement = () => {
         justifyContent='center'
         alignItems='center'
         minHeight='400px'
+        flexDirection='column'
       >
-        <Typography>{t('common.loading')}</Typography>
+        <Box sx={{ position: 'relative', mb: 3 }}>
+          <LinearProgress size={80} thickness={4} />
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            <Business sx={{ fontSize: 32, color: 'primary.main' }} />
+          </Box>
+        </Box>
+        <Typography variant='h5' color='textSecondary' sx={{ mb: 1 }}>
+          {t('common.loading')}
+        </Typography>
+        <Typography variant='body2' color='textSecondary'>
+          Loading companies...
+        </Typography>
       </Box>
     );
   }
 
-  return (
-    <Box>
+  // Handle error state
+  if (error) {
+    return (
       <Box
         display='flex'
+        justifyContent='center'
         alignItems='center'
-        justifyContent='space-between'
-        mb={4}
+        minHeight='400px'
+        flexDirection='column'
       >
-        <Typography variant='h4' component='h1' sx={{ fontWeight: 'bold' }}>
-          {t('company.title')}
-        </Typography>
-        <Button
-          variant='contained'
-          startIcon={<Add />}
-          onClick={() => handleOpenDialog()}
-        >
-          {t('company.addCompany')}
-        </Button>
+        <Box sx={{ textAlign: 'center', maxWidth: 500 }}>
+          <Business sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
+          <Typography variant='h5' color='error.main' sx={{ mb: 2 }}>
+            Connection Error
+          </Typography>
+          <Typography variant='body1' color='textSecondary' sx={{ mb: 3 }}>
+            Unable to connect to the backend server. Please check if the server
+            is running.
+          </Typography>
+          <Typography variant='body2' color='textSecondary'>
+            This is normal if you&apos;re running the frontend without the
+            backend server.
+          </Typography>
+        </Box>
       </Box>
+    );
+  }
+
+  const companiesData = companies || [];
+
+  return (
+    <Box sx={{ p: 0 }}>
+      {/* Header Section */}
+      <Fade in={animateCards} timeout={800}>
+        <Box sx={{ mb: 4 }}>
+          <Typography
+            variant='h3'
+            component='h1'
+            sx={{
+              fontWeight: 800,
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              mb: 2,
+            }}
+          >
+            {t('company.management')}
+          </Typography>
+          <Typography variant='h6' color='textSecondary' sx={{ mb: 3 }}>
+            {t('company.subtitle')}
+          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Divider sx={{ opacity: 0.3, flexGrow: 1, mr: 2 }} />
+            <Button
+              variant='contained'
+              startIcon={<Add />}
+              onClick={() => handleOpenDialog()}
+              sx={{
+                px: 3,
+                py: 1.5,
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: theme.shadows[8],
+                },
+              }}
+            >
+              {t('company.addNew')}
+            </Button>
+          </Box>
+        </Box>
+      </Fade>
 
       {/* Companies Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>{t('common.name')}</TableCell>
-              <TableCell>{t('company.aiModel')}</TableCell>
-              <TableCell>{t('company.temperature')}</TableCell>
-              <TableCell>{t('company.maxTokens')}</TableCell>
-              <TableCell>{t('common.created')}</TableCell>
-              <TableCell>{t('common.updated')}</TableCell>
-              <TableCell>{t('company.documents')}</TableCell>
-              <TableCell>{t('company.activityLogs')}</TableCell>
-              <TableCell>{t('common.status')}</TableCell>
-              <TableCell>{t('common.actions')}</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {companies?.map(company => (
-              <TableRow key={company.id}>
-                <TableCell>
-                  <Box display='flex' alignItems='center'>
-                    <Business sx={{ mr: 1, color: 'primary.main' }} />
-                    <Typography variant='body1' sx={{ fontWeight: 'medium' }}>
-                      {company.name}
-                    </Typography>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={company.model_name}
-                    size='small'
-                    color='primary'
-                    variant='outlined'
-                  />
-                </TableCell>
-                <TableCell>{company.temperature}</TableCell>
-                <TableCell>{company.max_tokens}</TableCell>
-                <TableCell>
-                  <Typography variant='body2' color='text.secondary'>
-                    {company.created_at
-                      ? new Date(company.created_at).toLocaleDateString()
-                      : 'N/A'}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant='body2' color='text.secondary'>
-                    {company.updated_at
-                      ? new Date(company.updated_at).toLocaleDateString()
-                      : 'N/A'}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Box display='flex' alignItems='center'>
-                    {/* Description icon removed as per edit hint */}
-                    {getSafeCount(company.pdf_count)}
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Box display='flex' flexDirection='column' gap={0.5}>
-                    <Typography variant='caption' color='text.secondary'>
-                      QA: {getSafeCount(company.qa_logs_count)}
-                    </Typography>
-                    <Typography variant='caption' color='text.secondary'>
-                      Agent: {getSafeCount(company.agent_logs_count)}
-                    </Typography>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={
-                      getSafeCount(company.pdf_count) > 0
-                        ? t('common.active')
-                        : t('company.noDocuments')
-                    }
-                    color={
-                      getSafeCount(company.pdf_count) > 0
-                        ? 'success'
-                        : 'default'
-                    }
-                    size='small'
-                  />
-                </TableCell>
-                <TableCell>
-                  <Box display='flex' gap={1}>
-                    <IconButton
-                      size='small'
-                      color='primary'
-                      onClick={() => handleOpenDialog(company)}
+      <Slide direction='up' in={animateCards} timeout={1200}>
+        <Card
+          sx={{
+            background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`,
+            border: `1px solid ${theme.palette.divider}`,
+            transition: 'all 0.3s ease-in-out',
+            '&:hover': {
+              boxShadow: theme.shadows[8],
+            },
+          }}
+        >
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <Business sx={{ fontSize: 32, color: 'primary.main', mr: 2 }} />
+              <Typography variant='h5' component='h2' sx={{ fontWeight: 700 }}>
+                {t('company.companiesList')}
+              </Typography>
+            </Box>
+            <TableContainer component={Paper} sx={{ boxShadow: 'none' }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('company.name')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('company.aiModel')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('company.temperature')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('company.maxTokens')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('company.documents')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('company.qaLogs')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('company.agentLogs')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('company.created')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
+                      {t('common.actions')}
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {companiesData.map(company => (
+                    <TableRow
+                      key={company.id}
+                      sx={{
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                          background: theme.palette.action.hover,
+                          transform: 'scale(1.01)',
+                        },
+                      }}
                     >
-                      <Edit />
-                    </IconButton>
-                    <IconButton
-                      size='small'
-                      color='error'
-                      onClick={() => handleDelete(company.id)}
-                    >
-                      <Delete />
-                    </IconButton>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Avatar
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              mr: 2,
+                              bgcolor: theme.palette.primary.main,
+                            }}
+                          >
+                            <Business />
+                          </Avatar>
+                          <Typography
+                            variant='subtitle2'
+                            sx={{ fontWeight: 600 }}
+                          >
+                            {company.name}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={company.model_name || 'N/A'}
+                          size='small'
+                          color='primary'
+                          variant='outlined'
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2' color='textSecondary'>
+                          {company.temperature || 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2' color='textSecondary'>
+                          {company.max_tokens || 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={<Description />}
+                          label={company.pdf_count || 0}
+                          size='small'
+                          color='info'
+                          variant='outlined'
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={<QuestionAnswer />}
+                          label={company.qa_logs_count || 0}
+                          size='small'
+                          color='secondary'
+                          variant='outlined'
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={<SmartToy />}
+                          label={company.agent_logs_count || 0}
+                          size='small'
+                          color='warning'
+                          variant='outlined'
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2' color='textSecondary'>
+                          {company.created_at
+                            ? new Date(company.created_at).toLocaleDateString()
+                            : 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Tooltip title={t('company.edit')}>
+                            <IconButton
+                              size='small'
+                              color='secondary'
+                              onClick={() => handleOpenDialog(company)}
+                            >
+                              <Edit />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={t('company.delete')}>
+                            <IconButton
+                              size='small'
+                              color='error'
+                              onClick={() => handleDelete(company.id)}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </Slide>
 
       {/* Add/Edit Company Dialog */}
       <Dialog
-        open={dialogOpen}
+        open={openDialog}
         onClose={handleCloseDialog}
-        maxWidth='md'
+        maxWidth='sm'
         fullWidth
       >
         <DialogTitle>
@@ -362,105 +492,51 @@ const CompanyManagement = () => {
         </DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent>
-            {/* Model Loading Warning */}
-            {modelsLoading && (
-              <Alert severity='warning' sx={{ mb: 2 }}>
-                <Warning sx={{ mr: 1 }} />
-                {t('company.loadingModels')}
-              </Alert>
-            )}
-
-            {/* Model Loading Error */}
-            {!modelsLoading && openaiModels.length === 0 && (
-              <Alert severity='error' sx={{ mb: 2 }}>
-                {t('company.modelsError')}
-              </Alert>
-            )}
-
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label={t('company.companyName')}
+                  label={t('company.name')}
                   value={formData.name}
-                  onChange={e => handleInputChange('name', e.target.value)}
+                  onChange={handleInputChange('name')}
                   required
-                  disabled={!!editingCompany} // Can't change name after creation
-                  error={!!formErrors.name}
-                  helperText={formErrors.name}
+                  disabled={!!editingCompany} // Disable when editing
+                  helperText={
+                    editingCompany ? t('company.nameChangeNotAllowed') : ''
+                  }
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth required error={!!formErrors.model_name}>
-                  <InputLabel>{t('company.aiModel')} *</InputLabel>
-                  <Select
-                    value={formData.model_name}
-                    onChange={e =>
-                      handleInputChange('model_name', e.target.value)
-                    }
-                    label={`${t('company.aiModel')} *`}
-                    disabled={modelsLoading || openaiModels.length === 0}
-                  >
-                    {openaiModels.map(model => (
-                      <MenuItem key={model.id} value={model.id}>
-                        <Box
-                          display='flex'
-                          alignItems='center'
-                          justifyContent='space-between'
-                          width='100%'
-                        >
-                          <span>{model.id}</span>
-                          {model.recommended && (
-                            <Chip
-                              label={t('company.recommended')}
-                              size='small'
-                              color='success'
-                            />
-                          )}
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {formErrors.model_name && (
-                    <FormHelperText error>
-                      {formErrors.model_name}
-                    </FormHelperText>
-                  )}
-                  <FormHelperText>{t('company.modelHelp')}</FormHelperText>
-                </FormControl>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label={t('company.description')}
+                  value={formData.description}
+                  onChange={handleInputChange('description')}
+                  multiline
+                  rows={3}
+                />
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  label={t('company.model')}
+                  value={formData.model_name}
+                  onChange={handleInputChange('model_name')}
+                  select
+                  SelectProps={{ native: true }}
+                >
+                  <option value='gpt-4'>GPT-4</option>
+                  <option value='gpt-3.5-turbo'>GPT-3.5 Turbo</option>
+                </TextField>
+              </Grid>
+              <Grid item xs={6}>
                 <TextField
                   fullWidth
                   label={t('company.temperature')}
                   type='number'
-                  inputProps={{ min: 0, max: 2, step: 0.1 }}
                   value={formData.temperature}
-                  onChange={e =>
-                    handleInputChange('temperature', parseFloat(e.target.value))
-                  }
-                  required
-                  error={!!formErrors.temperature}
-                  helperText={
-                    formErrors.temperature || t('company.temperatureHelp')
-                  }
-                />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField
-                  fullWidth
-                  label={t('company.maxTokens')}
-                  type='number'
-                  inputProps={{ min: 1, max: 4000 }}
-                  value={formData.max_tokens}
-                  onChange={e =>
-                    handleInputChange('max_tokens', parseInt(e.target.value))
-                  }
-                  required
-                  error={!!formErrors.max_tokens}
-                  helperText={
-                    formErrors.max_tokens || t('company.maxTokensHelp')
-                  }
+                  onChange={handleInputChange('temperature')}
+                  inputProps={{ min: 0, max: 2, step: 0.1 }}
                 />
               </Grid>
             </Grid>
@@ -471,20 +547,30 @@ const CompanyManagement = () => {
               type='submit'
               variant='contained'
               disabled={
-                companyMutation.isLoading ||
-                modelsLoading ||
-                openaiModels.length === 0
+                createCompanyMutation.isLoading ||
+                updateCompanyMutation.isLoading
               }
             >
-              {companyMutation.isLoading
-                ? t('common.saving')
-                : editingCompany
-                  ? t('common.update')
-                  : t('common.create')}
+              {editingCompany ? t('common.update') : t('common.create')}
             </Button>
           </DialogActions>
         </form>
       </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -138,6 +138,8 @@ class AgentLogResponse(BaseModel):
 
 class QALogResponse(BaseModel):
     id: int
+    user_id: int
+    company_id: int
     question: str
     answer: str
     timestamp: datetime

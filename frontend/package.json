@@ -1,7 +1,7 @@
 {
-  "name": "insurance-frontend",
+  "name": "insurance-assistant-system",
   "version": "1.0.0",
-  "description": "Insurance PDF Analysis Frontend",
+  "description": "AI-powered Insurance Assistant System - Intelligent insurance management and customer support platform",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.11.1",

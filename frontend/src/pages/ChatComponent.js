@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -40,7 +40,6 @@ import { useTranslation } from 'react-i18next';
 
 const ChatComponent = () => {
   const { user } = useSelector(state => state.auth);
-  const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
 
@@ -57,7 +56,7 @@ const ChatComponent = () => {
   // Get companies
   const { data: companies } = useQuery(
     'customerCompanies',
-    () => api.get(endpoints.companies).then(res => res.data),
+    () => api.get(endpoints.adminCompanies).then(res => res.data),
     { enabled: !!user }
   );
 
@@ -157,7 +156,7 @@ const ChatComponent = () => {
   };
 
   const goBack = () => {
-    navigate('/');
+    setSelectedCompany(null);
   };
 
   const formatTimestamp = timestamp => {
@@ -207,9 +206,11 @@ const ChatComponent = () => {
     return (
       <Box>
         <Box display='flex' alignItems='center' mb={3}>
-          <IconButton onClick={goBack} sx={{ mr: 2 }}>
-            <ArrowBack />
-          </IconButton>
+          {selectedCompany && (
+            <IconButton onClick={goBack} sx={{ mr: 2 }}>
+              <ArrowBack />
+            </IconButton>
+          )}
           <Typography variant='h4' component='h1' sx={{ fontWeight: 'bold' }}>
             {t('chat.title')}
           </Typography>

@@ -64,14 +64,14 @@ const LandingHeader = () => {
             >
               <img
                 src='/favicon.ico'
-                alt='Insurance System'
+                alt='AI-powered Insurance Assistant System'
                 style={{
                   width: '24px',
                   height: '24px',
                   borderRadius: '4px',
                 }}
               />
-              Insurance System
+              AI-powered Insurance Assistant System
             </Typography>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

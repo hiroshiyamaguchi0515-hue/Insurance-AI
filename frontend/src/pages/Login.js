@@ -114,7 +114,7 @@ const Login = () => {
           >
             <Business sx={{ fontSize: 40, mr: 2 }} />
             <Typography component='h1' variant='h4' sx={{ fontWeight: 'bold' }}>
-              Insurance System
+              Insurance
             </Typography>
           </Box>
 

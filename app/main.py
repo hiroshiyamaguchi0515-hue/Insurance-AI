@@ -206,6 +206,94 @@ async def list_users(db: Session = Depends(get_db)):
             detail="Failed to retrieve users"
         )
 
+@app.get("/admin/users/{user_id}", response_model=UserResponse, dependencies=[Depends(admin_required)], tags=["Auth"])
+async def get_user(user_id: int, db: Session = Depends(get_db)):
+    """Get a specific user by ID (admin only)"""
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving user {user_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve user"
+        )
+
+@app.put("/admin/users/{user_id}", response_model=UserResponse, dependencies=[Depends(admin_required)], tags=["Auth"])
+async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
+    """Update a user (admin only)"""
+    try:
+        # Check if user exists
+        existing_user = db.query(User).filter(User.id == user_id).first()
+        if not existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Update user using CRUD function
+        updated_user = crud.update_user(db, user_id, user_update)
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update user"
+            )
+        
+        return updated_user
+        
+    except ValueError as e:
+        # Handle validation errors from CRUD function
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user {user_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user"
+        )
+
+@app.delete("/admin/users/{user_id}", dependencies=[Depends(admin_required)], tags=["Auth"])
+async def delete_user(user_id: int, db: Session = Depends(get_db)):
+    """Delete a user (admin only)"""
+    try:
+        # Check if user exists
+        existing_user = db.query(User).filter(User.id == user_id).first()
+        if not existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Delete user using CRUD function
+        deleted_user = crud.delete_user(db, user_id)
+        if not deleted_user:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to delete user"
+            )
+        
+        return {"message": "User deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting user {user_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete user"
+        )
+
 # ============================================================================
 # COMPANY MANAGEMENT ENDPOINTS
 # ============================================================================
@@ -220,12 +308,12 @@ async def list_companies(db: Session = Depends(get_db)):
     """List all companies (admin only)"""
     return await get_all_companies(db)
 
-@app.get("/companies", response_model=List[CompanyResponse], tags=["Company"])
+@app.get("/admin/companies", response_model=List[CompanyResponse], tags=["Company"])
 async def get_companies(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     """Get all companies (accessible to all authenticated users)"""
     return await get_all_companies(db)
 
-@app.patch("/companies/{company_id}", dependencies=[Depends(admin_required)], tags=["Company"])
+@app.patch("/admin/companies/{company_id}", dependencies=[Depends(admin_required)], tags=["Company"])
 async def update_company_endpoint(company_id: int, update: CompanyUpdate, db: Session = Depends(get_db)):
     """Update company configuration"""
     return await update_company(company_id, update, db)
@@ -796,9 +884,11 @@ async def list_agent_logs(
             response_logs.append({
                 "id": log.id,
                 "question": log.question,
+                "user_id": log.user_id,
+                "company_id": log.company_id,
                 "answer": log.answer,
                 "timestamp": log.timestamp,
-                "company_name": company.name  # Add company name from the company query
+                "company_name": company.name
             })
         
         return response_logs
@@ -919,6 +1009,8 @@ async def list_qa_logs(
             response_logs.append({
                 "id": log.id,
                 "question": log.question,
+                "user_id": log.user_id,
+                "company_id": log.company_id,
                 "answer": log.answer,
                 "timestamp": log.timestamp,
                 "company_name": company.name  # Add company name from the company query

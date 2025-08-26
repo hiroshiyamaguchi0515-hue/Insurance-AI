@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
-import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import CustomerDashboard from './pages/CustomerDashboard';
 import CompanyManagement from './pages/CompanyManagement';
@@ -11,7 +10,6 @@ import UserManagement from './pages/UserManagement';
 import PDFManagement from './pages/PDFManagement';
 import AgentManagement from './pages/AgentManagement';
 import VectorStoreManagement from './pages/VectorStoreManagement';
-import SystemHealth from './pages/SystemHealth';
 import QALogs from './pages/QALogs';
 import ChatComponent from './pages/ChatComponent';
 import { getUserInfo } from './store/slices/authSlice';
@@ -63,7 +61,6 @@ const AppRoutes = () => {
     return (
       <Routes>
         <Route path='/' element={<LandingPage />} />
-        <Route path='/login' element={<Login />} />
         <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
     );
@@ -124,14 +121,6 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <VectorStoreManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/health'
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <SystemHealth />
           </ProtectedRoute>
         }
       />
