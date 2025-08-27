@@ -47,7 +47,8 @@
     "change": "変更",
     "view": "表示",
     "language": "言語",
-    "details": "詳細"
+    "details": "詳細",
+    "INSURANCE": "保険アシスタント"
   },
   "navigation": {
     "dashboard": "ダッシュボード",
@@ -157,6 +158,8 @@
     "recommended": "推奨",
     "loadingModels": "利用可能なAIモデルを読み込み中...",
     "modelsError": "AIモデルの読み込みに失敗しました。ページを更新してお試しください。",
+    "noModelsAvailable": "利用可能なモデルがありません",
+    "tokens": "トークン",
     "temperatureRange": "温度は0から2の間である必要があります",
     "maxTokensRange": "最大トークン数は1から4000の間である必要があります",
     "activityLogs": "アクティビティログ",
@@ -246,7 +249,8 @@
     "view": "表示",
     "download": "ダウンロード",
     "delete": "削除",
-    "pdfs": "文書"
+    "pdfs": "文書",
+    "noFileSelected": "ファイルが選択されていません"
   },
   "qa": {
     "questionLabel": "質問",

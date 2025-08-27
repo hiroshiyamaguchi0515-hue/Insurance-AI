@@ -28,6 +28,7 @@ class Company(Base):
     __tablename__ = "companies"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, index=True, nullable=False)
+    description = Column(Text, nullable=True)
     model_name = Column(String(50), default="gpt-4-0125-preview", nullable=False)
     temperature = Column(Float, default=0.0, nullable=False)
     max_tokens = Column(Integer, default=1000, nullable=False)

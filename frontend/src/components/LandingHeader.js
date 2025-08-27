@@ -63,15 +63,14 @@ const LandingHeader = () => {
               onClick={() => navigate('/')}
             >
               <img
-                src='/favicon.ico'
+                src='/logo_banner.png'
                 alt='AI-powered Insurance Assistant System'
                 style={{
-                  width: '24px',
+                  width: 'auto',
                   height: '24px',
                   borderRadius: '4px',
                 }}
               />
-              AI-powered Insurance Assistant System
             </Typography>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

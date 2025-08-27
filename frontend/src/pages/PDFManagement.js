@@ -119,8 +119,10 @@ const PDFManagement = () => {
 
   // Delete PDF mutation
   const deleteMutation = useMutation(
-    async pdfId => {
-      const response = await api.delete(endpoints.deletePDF(pdfId));
+    async ({ companyId, filename }) => {
+      const response = await api.delete(
+        endpoints.removePDF(companyId, filename)
+      );
       return response.data;
     },
     {
@@ -147,10 +149,14 @@ const PDFManagement = () => {
       return;
     }
 
+    // For now, only handle single file upload to match backend expectation
+    if (files.length === 0) {
+      toast.error(t('pdf.noFileSelected'));
+      return;
+    }
+
     const formData = new FormData();
-    files.forEach(file => {
-      formData.append('files', file);
-    });
+    formData.append('file', files[0]); // Use 'file' (singular) as backend expects
 
     uploadMutation.mutate(formData);
   };
@@ -162,7 +168,10 @@ const PDFManagement = () => {
 
   const confirmDelete = () => {
     if (pdfToDelete) {
-      deleteMutation.mutate(pdfToDelete.id);
+      deleteMutation.mutate({
+        companyId: selectedCompany.id,
+        filename: pdfToDelete.filename,
+      });
     }
   };
 
@@ -171,7 +180,7 @@ const PDFManagement = () => {
     accept: {
       'application/pdf': ['.pdf'],
     },
-    multiple: true,
+    multiple: false, // Changed to false since backend only supports single file uploads
   });
 
   const companiesData = companies || [];

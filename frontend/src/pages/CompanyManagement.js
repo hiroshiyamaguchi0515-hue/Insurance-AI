@@ -55,6 +55,7 @@ const CompanyManagement = () => {
     description: '',
     model_name: 'gpt-4',
     temperature: 0.7,
+    max_tokens: 1000,
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -70,6 +71,19 @@ const CompanyManagement = () => {
   } = useQuery({
     queryKey: ['companies'],
     queryFn: () => api.get(endpoints.adminCompanies).then(res => res.data),
+    retry: 1,
+    retryDelay: 1000,
+  });
+
+  // Fetch available OpenAI models
+  const {
+    data: models,
+    isLoading: modelsLoading,
+    error: modelsError,
+  } = useQuery({
+    queryKey: ['openaiModels'],
+    queryFn: () =>
+      api.get(endpoints.openaiModels).then(res => res.data?.models),
     retry: 1,
     retryDelay: 1000,
   });
@@ -141,6 +155,16 @@ const CompanyManagement = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Set default model when models are loaded
+  useEffect(() => {
+    if (models && models.length > 0 && !formData.model_name) {
+      setFormData(prev => ({
+        ...prev,
+        model_name: models[0].id,
+      }));
+    }
+  }, [models, formData.model_name]);
+
   const handleOpenDialog = (company = null) => {
     if (company) {
       setEditingCompany(company);
@@ -149,6 +173,7 @@ const CompanyManagement = () => {
         description: company.description,
         model_name: company.model_name || 'gpt-4',
         temperature: company.temperature || 0.7,
+        max_tokens: company.max_tokens || 1000,
       });
     } else {
       setEditingCompany(null);
@@ -157,6 +182,7 @@ const CompanyManagement = () => {
         description: '',
         model_name: 'gpt-4',
         temperature: 0.7,
+        max_tokens: 1000,
       });
     }
     setOpenDialog(true);
@@ -170,6 +196,7 @@ const CompanyManagement = () => {
       description: '',
       model_name: 'gpt-4',
       temperature: 0.7,
+      max_tokens: 1000,
     });
   };
 
@@ -340,6 +367,9 @@ const CompanyManagement = () => {
                       {t('company.name')}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>
+                      {t('company.description')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>
                       {t('company.aiModel')}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>
@@ -396,6 +426,11 @@ const CompanyManagement = () => {
                             {company.name}
                           </Typography>
                         </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2' color='textSecondary'>
+                          {company.description || 'N/A'}
+                        </Typography>
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -524,9 +559,29 @@ const CompanyManagement = () => {
                   onChange={handleInputChange('model_name')}
                   select
                   SelectProps={{ native: true }}
+                  disabled={modelsLoading}
+                  helperText={
+                    modelsLoading
+                      ? t('company.loadingModels')
+                      : modelsError
+                        ? t('company.modelsError')
+                        : ''
+                  }
+                  error={!!modelsError}
                 >
-                  <option value='gpt-4'>GPT-4</option>
-                  <option value='gpt-3.5-turbo'>GPT-3.5 Turbo</option>
+                  {modelsLoading ? (
+                    <option value=''>{t('company.loadingModels')}</option>
+                  ) : modelsError ? (
+                    <option value=''>{t('company.modelsError')}</option>
+                  ) : models?.length > 0 ? (
+                    models.map(model => (
+                      <option key={model.id} value={model.id}>
+                        {model.id}
+                      </option>
+                    ))
+                  ) : (
+                    <option value=''>{t('company.noModelsAvailable')}</option>
+                  )}
                 </TextField>
               </Grid>
               <Grid item xs={6}>
@@ -537,6 +592,16 @@ const CompanyManagement = () => {
                   value={formData.temperature}
                   onChange={handleInputChange('temperature')}
                   inputProps={{ min: 0, max: 2, step: 0.1 }}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  label={t('company.maxTokens')}
+                  type='number'
+                  value={formData.max_tokens}
+                  onChange={handleInputChange('max_tokens')}
+                  helperText={t('company.maxTokensHelp')}
                 />
               </Grid>
             </Grid>

@@ -47,7 +47,8 @@
     "change": "Change",
     "view": "View",
     "language": "Language",
-    "details": "Details"
+    "details": "Details",
+    "INSURANCE": "Insurance Assistant"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -157,6 +158,8 @@
     "recommended": "Recommended",
     "loadingModels": "Loading available AI models...",
     "modelsError": "Failed to load AI models. Please refresh the page and try again.",
+    "noModelsAvailable": "No models available",
+    "tokens": "tokens",
     "temperatureRange": "Temperature must be between 0 and 2",
     "maxTokensRange": "Max tokens must be between 1 and 4000",
     "activityLogs": "Activity Logs",
@@ -246,7 +249,8 @@
     "view": "View",
     "download": "Download",
     "delete": "Delete",
-    "pdfs": "Documents"
+    "pdfs": "Documents",
+    "noFileSelected": "No file selected"
   },
   "qa": {
     "questionLabel": "Your question",

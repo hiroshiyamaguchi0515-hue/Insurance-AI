@@ -1,6 +1,6 @@
 {
   "name": "insurance-assistant-system",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI-powered Insurance Assistant System - Intelligent insurance management and customer support platform",
   "private": true,
   "dependencies": {

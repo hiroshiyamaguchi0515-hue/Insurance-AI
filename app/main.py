@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Insurance",
     description="AI-powered PDF document analysis and question answering system",
-    version="1.0.0",
+    version="1.0.1",
     tags=[
         {"name": "Auth", "description": "Authentication and user management"},
         {"name": "Company", "description": "Company management and configuration"},

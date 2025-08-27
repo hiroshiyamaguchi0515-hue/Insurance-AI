@@ -30,16 +30,15 @@ class OpenAIModelsService:
             # Filter for models suitable for company configuration
             suitable_models = []
             for model in models_response.data:
-                if any(model.id.startswith(prefix) for prefix in ['gpt-', 'text-']):
-                    model_info = {
-                        "id": model.id,
-                        "name": model.id,
-                        "type": "chat" if "gpt" in model.id else "text",
-                        "recommended": model.id in [
-                            "gpt-3.5-turbo", "gpt-4", "gpt-4o", "gpt-4o-mini"
-                        ]
-                    }
-                    suitable_models.append(model_info)
+                model_info = {
+                    "id": model.id,
+                    "name": model.id,
+                    "type": "chat" if "gpt" in model.id else "text",
+                    "recommended": model.id in [
+                        "gpt-3.5-turbo", "gpt-4", "gpt-4o", "gpt-4o-mini"
+                    ]
+                }
+                suitable_models.append(model_info)
             
             # Sort by recommendation and then alphabetically
             suitable_models.sort(key=lambda x: (not x["recommended"], x["id"]))

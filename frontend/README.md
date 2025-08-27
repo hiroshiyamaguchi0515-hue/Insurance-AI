@@ -61,7 +61,7 @@ REACT_APP_API_URL=http://localhost:8000
 
 # Application Configuration
 REACT_APP_NAME=Insurance PDF Analysis
-REACT_APP_VERSION=1.0.0
+REACT_APP_VERSION=1.0.1
 REACT_APP_ENV=development
 
 # Feature Flags

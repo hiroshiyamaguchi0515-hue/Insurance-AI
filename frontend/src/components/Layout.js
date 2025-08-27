@@ -59,8 +59,7 @@ const Layout = ({ children }) => {
   const user = useSelector(state => state.auth.user);
   const sidebarOpen = useSelector(state => state.ui.sidebarOpen);
 
-  // Get version from package.json
-  const version = '1.0.0'; // This could be imported from package.json or environment variable
+  const version = '1.0.1';
 
   const handleDrawerToggle = () => {
     dispatch(setSidebarOpen(!sidebarOpen));
@@ -194,7 +193,7 @@ const Layout = ({ children }) => {
                 mb: 0.5,
               }}
             >
-              Insurance Assistant
+              {t('common.INSURANCE')}
             </Typography>
             <Typography
               variant='caption'

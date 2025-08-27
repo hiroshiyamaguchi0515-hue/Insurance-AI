@@ -69,6 +69,7 @@ async def create_company(company: CompanyCreate, db: Session):
         # Create company with all required fields
         db_company = Company(
             name=company.name,
+            description=company.description,
             model_name=company.model_name,
             temperature=company.temperature,
             max_tokens=company.max_tokens
@@ -170,6 +171,8 @@ async def update_company(company_id: int, update: CompanyUpdate, db: Session):
                 )
         
         # Apply updates
+        if update.description is not None:
+            company.description = update.description
         if update.model_name:
             company.model_name = update.model_name
         if update.temperature is not None:

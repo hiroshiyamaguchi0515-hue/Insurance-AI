@@ -85,6 +85,7 @@ class UserResponse(UserBase):
 
 class CompanyCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500, description="Company description")
     model_name: str = Field(..., description="OpenAI model name (e.g., gpt-3.5-turbo, gpt-4)")
     temperature: float = Field(..., ge=0.0, le=2.0, description="Model temperature (0.0 to 2.0)")
     max_tokens: int = Field(1000, ge=1, le=4000, description="Maximum tokens for responses")
@@ -109,6 +110,7 @@ class CompanyCreate(BaseModel):
         return v
 
 class CompanyUpdate(BaseModel):
+    description: Optional[str] = Field(None, max_length=500, description="Company description")
     model_name: Optional[str] = Field(None, description="OpenAI model name (e.g., gpt-3.5-turbo, gpt-4)")
     temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="Model temperature (0.0 to 2.0)")
     max_tokens: Optional[int] = Field(None, ge=1, le=4000, description="Maximum tokens for responses")
@@ -200,6 +202,7 @@ class ChatRequest(BaseModel):
 class CompanyResponse(BaseModel):
     id: int
     name: str
+    description: Optional[str] = None
     model_name: str
     temperature: float
     max_tokens: int
