@@ -46,7 +46,7 @@ import { useDropzone } from 'react-dropzone';
 import { api, endpoints } from '../services/api';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import { parseApiError } from '../utils/errorHandler';
+import { parseApiError, handleServerError } from '../utils/errorHandler';
 import { formatDate } from '../utils/dateUtils';
 
 const PDFManagement = () => {
@@ -69,18 +69,40 @@ const PDFManagement = () => {
   }, []);
 
   // Get companies
-  const { data: companies, isLoading: companiesLoading } = useQuery(
+  const { data: companies, isLoading: companiesLoading, error: companiesError } = useQuery(
     'companies',
     () => api.get(endpoints.adminCompanies).then(res => res.data),
-    { enabled: !!user }
+    { 
+      enabled: !!user,
+      retry: (failureCount, error) => {
+        // Don't retry on 5xx server errors
+        if (error.response?.status >= 500) {
+          return false;
+        }
+        // Retry up to 2 times for other errors
+        return failureCount < 2;
+      },
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    }
   );
 
   // Get PDFs for selected company
-  const { data: pdfs, isLoading: pdfsLoading } = useQuery(
+  const { data: pdfs, isLoading: pdfsLoading, error: pdfsError } = useQuery(
     ['companyPDFs', selectedCompany?.id],
     () =>
       api.get(endpoints.companyPDFs(selectedCompany.id)).then(res => res.data),
-    { enabled: !!selectedCompany }
+    { 
+      enabled: !!selectedCompany,
+      retry: (failureCount, error) => {
+        // Don't retry on 5xx server errors
+        if (error.response?.status >= 500) {
+          return false;
+        }
+        // Retry up to 2 times for other errors
+        return failureCount < 2;
+      },
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    }
   );
   // Upload PDF mutation
   const uploadMutation = useMutation(
@@ -110,7 +132,7 @@ const PDFManagement = () => {
         setUploadProgress(0);
       },
       onError: error => {
-        const errorMessage = parseApiError(error);
+        const errorMessage = handleServerError(error, 'PDF Upload');
         toast.error(errorMessage);
         setUploadProgress(0);
       },
@@ -133,7 +155,7 @@ const PDFManagement = () => {
         setPdfToDelete(null);
       },
       onError: error => {
-        const errorMessage = parseApiError(error);
+        const errorMessage = handleServerError(error, 'PDF Delete');
         toast.error(errorMessage);
       },
     }
@@ -271,6 +293,7 @@ const PDFManagement = () => {
                   </Typography>
                   <Typography
                     variant='body2'
+                    component='div'
                     color='textSecondary'
                     sx={{ mb: 2, fontWeight: 500 }}
                   >
@@ -328,6 +351,35 @@ const PDFManagement = () => {
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                 <CircularProgress />
               </Box>
+            ) : companiesError ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Business
+                  sx={{ fontSize: 48, color: 'error.main', mb: 2 }}
+                />
+                <Typography
+                  variant='body1'
+                  component='div'
+                  color='error.main'
+                  sx={{ mb: 1 }}
+                >
+                  {t('common.error')}
+                </Typography>
+                <Typography
+                  variant='body2'
+                  component='div'
+                  color='textSecondary'
+                  sx={{ mb: 2 }}
+                >
+                  {handleServerError(companiesError, 'Companies Query')}
+                </Typography>
+                <Button
+                  variant='outlined'
+                  onClick={() => window.location.reload()}
+                  sx={{ mt: 1 }}
+                >
+                  {t('common.retry')}
+                </Button>
+              </Box>
             ) : companiesData.length > 0 ? (
               <FormControl fullWidth>
                 <InputLabel id='company-select-label'>
@@ -359,7 +411,11 @@ const PDFManagement = () => {
                 <Business
                   sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }}
                 />
-                <Typography variant='body1' color='textSecondary'>
+                <Typography
+                  variant='body1'
+                  component='div'
+                  color='textSecondary'
+                >
                   {t('pdf.noCompanies')}
                 </Typography>
               </Box>
@@ -428,6 +484,35 @@ const PDFManagement = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <CircularProgress />
                 </Box>
+              ) : pdfsError ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Description
+                    sx={{ fontSize: 48, color: 'error.main', mb: 2 }}
+                  />
+                  <Typography
+                    variant='body1'
+                    component='div'
+                    color='error.main'
+                    sx={{ mb: 1 }}
+                  >
+                    {t('common.error')}
+                  </Typography>
+                  <Typography
+                    variant='body2'
+                    component='div'
+                    color='textSecondary'
+                    sx={{ mb: 2 }}
+                  >
+                    {handleServerError(pdfsError, 'PDFs Query')}
+                  </Typography>
+                  <Button
+                    variant='outlined'
+                    onClick={() => window.location.reload()}
+                    sx={{ mt: 1 }}
+                  >
+                    {t('common.retry')}
+                  </Button>
+                </Box>
               ) : pdfs?.pdf_files?.length > 0 ? (
                 <List>
                   {pdfs?.pdf_files.map(pdf => (
@@ -461,6 +546,7 @@ const PDFManagement = () => {
                         primary={
                           <Typography
                             variant='subtitle1'
+                            component='div'
                             sx={{ fontWeight: 600 }}
                           >
                             {pdf.filename}
@@ -470,6 +556,7 @@ const PDFManagement = () => {
                           <Box>
                             <Typography
                               variant='body2'
+                              component='div'
                               color='textSecondary'
                               sx={{ mb: 1 }}
                             >
@@ -501,12 +588,17 @@ const PDFManagement = () => {
                   />
                   <Typography
                     variant='body1'
+                    component='div'
                     color='textSecondary'
                     sx={{ mb: 2 }}
                   >
                     {t('pdf.noDocuments')}
                   </Typography>
-                  <Typography variant='body2' color='textSecondary'>
+                  <Typography
+                    variant='body2'
+                    component='div'
+                    color='textSecondary'
+                  >
                     {t('pdf.startUpload')}
                   </Typography>
                 </Box>
@@ -558,6 +650,19 @@ const PDFManagement = () => {
               <LinearProgress variant='determinate' value={uploadProgress} />
             </Box>
           )}
+          
+          {uploadMutation.isError && (
+            <Box sx={{ mt: 2 }}>
+              <Typography 
+                variant='body2' 
+                component='div'
+                color='error.main' 
+                sx={{ mb: 1 }}
+              >
+                {t('common.error')}: {uploadMutation.error ? handleServerError(uploadMutation.error, 'Upload') : t('pdf.uploadFailed')}
+              </Typography>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setUploadDialogOpen(false)}>
@@ -581,6 +686,19 @@ const PDFManagement = () => {
           <Typography variant='body2' color='textSecondary' sx={{ mt: 1 }}>
             {t('pdf.deleteWarning')}
           </Typography>
+          
+          {deleteMutation.isError && (
+            <Box sx={{ mt: 2 }}>
+              <Typography 
+                variant='body2' 
+                component='div'
+                color='error.main' 
+                sx={{ mb: 1 }}
+              >
+                {t('common.error')}: {deleteMutation.error ? handleServerError(deleteMutation.error, 'Delete') : t('pdf.deleteFailed')}
+              </Typography>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>

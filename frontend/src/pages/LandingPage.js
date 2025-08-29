@@ -1,43 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
+  Container,
   Typography,
   Button,
-  Container,
   Grid,
   Card,
   CardContent,
-  Paper,
-  useTheme,
-  TextField,
   Rating,
-  Avatar,
+  TextField,
+  Alert,
+  Snackbar,
+  useTheme,
   Fade,
   Slide,
   Grow,
   Zoom,
+  Paper,
   Divider,
-  Alert,
-  Snackbar,
+  Avatar,
+  Chip,
 } from '@mui/material';
 import {
-  Description,
-  SmartToy,
-  Storage,
+  ArrowForward,
   Security,
   Speed,
   Analytics,
-  ArrowForward,
+  SmartToy,
+  Storage,
   CheckCircle,
+  Send,
   Email,
   Phone,
   LocationOn,
+  Description,
   Schedule,
-  Send,
+  Business,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import LandingHeader from '../components/LandingHeader';
+import LandingFooter from '../components/LandingFooter';
 import LoginModal from '../components/LoginModal';
+import ScrollButtons from '../components/ScrollButtons';
 
 const LandingPage = () => {
   const { t } = useTranslation();
@@ -55,6 +59,41 @@ const LandingPage = () => {
     message: '',
     severity: 'success',
   });
+  const [visibleSections, setVisibleSections] = useState(new Set());
+  const sectionRefs = useRef({});
+
+  // Lazy loading with intersection observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setVisibleSections(prev => new Set([...prev, entry.target.id]));
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '0px 0px -100px 0px',
+      }
+    );
+
+    // Observe all sections
+    Object.values(sectionRefs.current).forEach(ref => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Smooth scroll to section
+
+  // Add ref to section
+  const addSectionRef = (id, ref) => {
+    if (ref) {
+      sectionRefs.current[id] = ref;
+    }
+  };
 
   const handleGetStarted = () => {
     setLoginModalOpen(true);
@@ -255,64 +294,617 @@ const LandingPage = () => {
       </Box>
 
       {/* Features Section */}
-      <Container maxWidth='lg' sx={{ py: { xs: 6, md: 10 } }}>
-        <Fade in timeout={800}>
-          <Box sx={{ textAlign: 'center', mb: 8 }}>
-            <Typography
-              variant='h3'
-              component='h2'
-              sx={{
-                fontWeight: 'bold',
-                mb: 3,
-                fontSize: { xs: '2rem', md: '2.5rem' },
-              }}
-            >
-              {t('landing.features.title')}
-            </Typography>
-            <Typography
-              variant='h6'
-              color='textSecondary'
-              sx={{ maxWidth: 600, mx: 'auto' }}
-            >
-              {t('landing.features.subtitle')}
-            </Typography>
-          </Box>
-        </Fade>
-
-        <Grid container spacing={4}>
-          {features.map((feature, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Grow in timeout={800 + index * 100}>
-                <Card
+      <Container
+        maxWidth='lg'
+        sx={{ py: { xs: 6, md: 10 } }}
+        id='features'
+        ref={ref => addSectionRef('features', ref)}
+      >
+        {visibleSections.has('features') && (
+          <>
+            <Fade in timeout={800}>
+              <Box sx={{ textAlign: 'center', mb: 8 }}>
+                <Typography
+                  variant='h3'
+                  component='h2'
                   sx={{
-                    height: '100%',
-                    transition:
-                      'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
-                    '&:hover': {
-                      transform: 'translateY(-8px)',
-                      boxShadow: theme.shadows[8],
-                    },
+                    fontWeight: 'bold',
+                    mb: 3,
+                    fontSize: { xs: '2rem', md: '2.5rem' },
                   }}
                 >
-                  <CardContent sx={{ textAlign: 'center', p: 4 }}>
-                    <Box sx={{ mb: 3 }}>{feature.icon}</Box>
-                    <Typography
-                      variant='h6'
-                      component='h3'
-                      sx={{ fontWeight: 'bold', mb: 2 }}
+                  {t('landing.features.title')}
+                </Typography>
+                <Typography
+                  variant='h6'
+                  color='textSecondary'
+                  sx={{ maxWidth: 600, mx: 'auto' }}
+                >
+                  {t('landing.features.subtitle')}
+                </Typography>
+              </Box>
+            </Fade>
+
+            <Grid container spacing={4}>
+              {features.map((feature, index) => (
+                <Grid item xs={12} sm={6} md={4} key={index}>
+                  <Grow in timeout={800 + index * 100}>
+                    <Card
+                      sx={{
+                        height: '100%',
+                        transition:
+                          'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+                        '&:hover': {
+                          transform: 'translateY(-8px)',
+                          boxShadow: theme.shadows[8],
+                        },
+                      }}
                     >
-                      {feature.title}
-                    </Typography>
-                    <Typography variant='body2' color='textSecondary'>
-                      {feature.description}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grow>
+                      <CardContent sx={{ textAlign: 'center', p: 4 }}>
+                        <Box sx={{ mb: 3 }}>{feature.icon}</Box>
+                        <Typography
+                          variant='h6'
+                          component='h3'
+                          sx={{ fontWeight: 'bold', mb: 2 }}
+                        >
+                          {feature.title}
+                        </Typography>
+                        <Typography variant='body2' color='textSecondary'>
+                          {feature.description}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grow>
+                </Grid>
+              ))}
             </Grid>
-          ))}
-        </Grid>
+          </>
+        )}
       </Container>
+
+      {/* Pricing Section */}
+      <Box
+        sx={{ bgcolor: 'grey.50', py: { xs: 6, md: 10 } }}
+        id='pricing'
+        ref={ref => addSectionRef('pricing', ref)}
+      >
+        {visibleSections.has('pricing') && (
+          <Container maxWidth='lg'>
+            <Fade in timeout={800}>
+              <Box sx={{ textAlign: 'center', mb: 8 }}>
+                <Typography
+                  variant='h3'
+                  component='h2'
+                  sx={{
+                    fontWeight: 'bold',
+                    mb: 3,
+                    fontSize: { xs: '2rem', md: '2.5rem' },
+                  }}
+                >
+                  {t('landing.pricing.title')}
+                </Typography>
+                <Typography
+                  variant='h6'
+                  color='textSecondary'
+                  sx={{ maxWidth: 600, mx: 'auto' }}
+                >
+                  {t('landing.pricing.subtitle')}
+                </Typography>
+              </Box>
+            </Fade>
+
+            <Grid container spacing={4}>
+              {[
+                {
+                  title: t('landing.pricing.starter.title'),
+                  price: t('landing.pricing.starter.price'),
+                  description: t('landing.pricing.starter.description'),
+                  features: t('landing.pricing.starter.features', {
+                    returnObjects: true,
+                  }),
+                  popular: false,
+                },
+                {
+                  title: t('landing.pricing.professional.title'),
+                  price: t('landing.pricing.professional.price'),
+                  description: t('landing.pricing.professional.description'),
+                  features: t('landing.pricing.professional.features', {
+                    returnObjects: true,
+                  }),
+                  popular: true,
+                },
+                {
+                  title: t('landing.pricing.enterprise.title'),
+                  price: t('landing.pricing.enterprise.price'),
+                  description: t('landing.pricing.enterprise.description'),
+                  features: t('landing.pricing.enterprise.features', {
+                    returnObjects: true,
+                  }),
+                  popular: false,
+                },
+              ].map((plan, index) => (
+                <Grid item xs={12} md={4} key={index}>
+                  <Grow in timeout={800 + index * 200}>
+                    <Card
+                      sx={{
+                        height: '100%',
+                        position: 'relative',
+                        transition:
+                          'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+                        '&:hover': {
+                          transform: 'translateY(-8px)',
+                          boxShadow: theme.shadows[8],
+                        },
+                        ...(plan.popular && {
+                          border: `2px solid ${theme.palette.primary.main}`,
+                          transform: 'scale(1.05)',
+                        }),
+                      }}
+                    >
+                      {plan.popular && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: -12,
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            px: 2,
+                            py: 0.5,
+                            borderRadius: 1,
+                            fontSize: '0.875rem',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          {t('landing.pricing.mostPopular')}
+                        </Box>
+                      )}
+                      <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                        <Typography
+                          variant='h4'
+                          component='h3'
+                          sx={{ fontWeight: 'bold', mb: 2 }}
+                        >
+                          {plan.title}
+                        </Typography>
+                        <Typography
+                          variant='h3'
+                          sx={{
+                            fontWeight: 'bold',
+                            mb: 1,
+                            color: 'primary.main',
+                          }}
+                        >
+                          {plan.price}
+                        </Typography>
+                        <Typography
+                          variant='body2'
+                          color='textSecondary'
+                          sx={{ mb: 3 }}
+                        >
+                          {plan.description}
+                        </Typography>
+                        <Box sx={{ mb: 3 }}>
+                          {plan.features.map((feature, featureIndex) => (
+                            <Box
+                              key={featureIndex}
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                mb: 1,
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <CheckCircle
+                                sx={{
+                                  color: 'success.main',
+                                  mr: 1,
+                                  fontSize: 16,
+                                }}
+                              />
+                              <Typography variant='body2'>{feature}</Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                        <Button
+                          variant={plan.popular ? 'contained' : 'outlined'}
+                          fullWidth
+                          onClick={handleGetStarted}
+                          sx={{
+                            py: 1.5,
+                            borderRadius: 2,
+                          }}
+                        >
+                          {t('landing.pricing.getStarted')}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </Grow>
+                </Grid>
+              ))}
+            </Grid>
+          </Container>
+        )}
+      </Box>
+
+      {/* About Section */}
+      <Container
+        maxWidth='lg'
+        sx={{ py: { xs: 6, md: 10 } }}
+        id='about'
+        ref={ref => addSectionRef('about', ref)}
+      >
+        {visibleSections.has('about') && (
+          <Grid container spacing={6} alignItems='center'>
+            <Grid item xs={12} md={6}>
+              <Slide direction='right' in timeout={800}>
+                <Box>
+                  <Typography
+                    variant='h3'
+                    component='h2'
+                    sx={{
+                      fontWeight: 'bold',
+                      mb: 4,
+                      fontSize: { xs: '2rem', md: '2.5rem' },
+                    }}
+                  >
+                    {t('landing.about.title')}
+                  </Typography>
+                  <Typography
+                    variant='h6'
+                    color='textSecondary'
+                    sx={{ mb: 4, lineHeight: 1.6 }}
+                  >
+                    {t('landing.about.subtitle')}
+                  </Typography>
+                  <Typography
+                    variant='body1'
+                    color='textSecondary'
+                    sx={{ mb: 4, lineHeight: 1.6 }}
+                  >
+                    {t('landing.about.description')}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                    <Button
+                      variant='contained'
+                      onClick={handleGetStarted}
+                      sx={{ px: 3, py: 1.5 }}
+                    >
+                      {t('landing.about.getStarted')}
+                    </Button>
+                    <Button variant='outlined' sx={{ px: 3, py: 1.5 }}>
+                      {t('landing.about.learnMore')}
+                    </Button>
+                  </Box>
+                </Box>
+              </Slide>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Slide direction='left' in timeout={1000}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '100%',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: { xs: 280, md: 400 },
+                      height: { xs: 280, md: 400 },
+                      borderRadius: 3,
+                      background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.secondary.light} 100%)`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: theme.shadows[8],
+                    }}
+                  >
+                    <Business
+                      sx={{ fontSize: { xs: 120, md: 160 }, color: 'white' }}
+                    />
+                  </Box>
+                </Box>
+              </Slide>
+            </Grid>
+          </Grid>
+        )}
+      </Container>
+
+      {/* Security Section */}
+      <Box
+        sx={{ bgcolor: 'grey.50', py: { xs: 6, md: 10 } }}
+        id='security'
+        ref={ref => addSectionRef('security', ref)}
+      >
+        {visibleSections.has('security') && (
+          <Container maxWidth='lg'>
+            <Fade in timeout={800}>
+              <Box sx={{ textAlign: 'center', mb: 8 }}>
+                <Typography
+                  variant='h3'
+                  component='h2'
+                  sx={{
+                    fontWeight: 'bold',
+                    mb: 3,
+                    fontSize: { xs: '2rem', md: '2.5rem' },
+                  }}
+                >
+                  {t('landing.security.title')}
+                </Typography>
+                <Typography
+                  variant='h6'
+                  color='textSecondary'
+                  sx={{ maxWidth: 600, mx: 'auto' }}
+                >
+                  {t('landing.security.subtitle')}
+                </Typography>
+              </Box>
+            </Fade>
+
+            <Grid container spacing={4}>
+              {[
+                {
+                  icon: (
+                    <Security sx={{ fontSize: 40, color: 'success.main' }} />
+                  ),
+                  title: t('landing.security.encryption.title'),
+                  description: t('landing.security.encryption.description'),
+                },
+                {
+                  icon: (
+                    <CheckCircle sx={{ fontSize: 40, color: 'primary.main' }} />
+                  ),
+                  title: t('landing.security.compliance.title'),
+                  description: t('landing.security.compliance.description'),
+                },
+                {
+                  icon: (
+                    <Business sx={{ fontSize: 40, color: 'warning.main' }} />
+                  ),
+                  title: t('landing.security.access.title'),
+                  description: t('landing.security.access.description'),
+                },
+              ].map((item, index) => (
+                <Grid item xs={12} md={4} key={index}>
+                  <Grow in timeout={800 + index * 200}>
+                    <Card
+                      sx={{
+                        height: '100%',
+                        transition:
+                          'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+                        '&:hover': {
+                          transform: 'translateY(-8px)',
+                          boxShadow: theme.shadows[8],
+                        },
+                      }}
+                    >
+                      <CardContent sx={{ textAlign: 'center', p: 4 }}>
+                        <Box sx={{ mb: 3 }}>{item.icon}</Box>
+                        <Typography
+                          variant='h6'
+                          component='h3'
+                          sx={{ fontWeight: 'bold', mb: 2 }}
+                        >
+                          {item.title}
+                        </Typography>
+                        <Typography variant='body2' color='textSecondary'>
+                          {item.description}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grow>
+                </Grid>
+              ))}
+            </Grid>
+          </Container>
+        )}
+      </Box>
+
+      {/* Blog Section */}
+      <Container
+        maxWidth='lg'
+        sx={{ py: { xs: 6, md: 10 } }}
+        id='blog'
+        ref={ref => addSectionRef('blog', ref)}
+      >
+        {visibleSections.has('blog') && (
+          <>
+            <Fade in timeout={800}>
+              <Box sx={{ textAlign: 'center', mb: 8 }}>
+                <Typography
+                  variant='h3'
+                  component='h2'
+                  sx={{
+                    fontWeight: 'bold',
+                    mb: 3,
+                    fontSize: { xs: '2rem', md: '2.5rem' },
+                  }}
+                >
+                  {t('landing.blog.title')}
+                </Typography>
+                <Typography
+                  variant='h6'
+                  color='textSecondary'
+                  sx={{ maxWidth: 600, mx: 'auto' }}
+                >
+                  {t('landing.blog.subtitle')}
+                </Typography>
+              </Box>
+            </Fade>
+
+            <Grid container spacing={4}>
+              {[
+                {
+                  title: t('landing.blog.article1.title'),
+                  excerpt: t('landing.blog.article1.excerpt'),
+                  date: t('landing.blog.article1.date'),
+                  category: t('landing.blog.article1.category'),
+                },
+                {
+                  title: t('landing.blog.article2.title'),
+                  excerpt: t('landing.blog.article2.excerpt'),
+                  date: t('landing.blog.article2.date'),
+                  category: t('landing.blog.article2.category'),
+                },
+                {
+                  title: t('landing.blog.article3.title'),
+                  excerpt: t('landing.blog.article3.excerpt'),
+                  date: t('landing.blog.article3.date'),
+                  category: t('landing.blog.article3.category'),
+                },
+              ].map((article, index) => (
+                <Grid item xs={12} md={4} key={index}>
+                  <Grow in timeout={800 + index * 200}>
+                    <Card
+                      sx={{
+                        height: '100%',
+                        transition:
+                          'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+                        '&:hover': {
+                          transform: 'translateY(-8px)',
+                          boxShadow: theme.shadows[8],
+                        },
+                      }}
+                    >
+                      <CardContent sx={{ p: 4 }}>
+                        <Box sx={{ mb: 2 }}>
+                          <Chip
+                            label={article.category}
+                            size='small'
+                            color='primary'
+                            sx={{ mb: 2 }}
+                          />
+                          <Typography
+                            variant='caption'
+                            color='textSecondary'
+                            sx={{ display: 'block', mb: 1 }}
+                          >
+                            {article.date}
+                          </Typography>
+                        </Box>
+                        <Typography
+                          variant='h6'
+                          component='h3'
+                          sx={{ fontWeight: 'bold', mb: 2, lineHeight: 1.3 }}
+                        >
+                          {article.title}
+                        </Typography>
+                        <Typography
+                          variant='body2'
+                          color='textSecondary'
+                          sx={{ mb: 3 }}
+                        >
+                          {article.excerpt}
+                        </Typography>
+                        <Button
+                          variant='outlined'
+                          size='small'
+                          sx={{ borderRadius: 2 }}
+                        >
+                          {t('landing.blog.readMore')}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </Grow>
+                </Grid>
+              ))}
+            </Grid>
+          </>
+        )}
+      </Container>
+
+      {/* Help Section */}
+      <Box
+        sx={{ bgcolor: 'grey.50', py: { xs: 6, md: 10 } }}
+        id='help'
+        ref={ref => addSectionRef('help', ref)}
+      >
+        {visibleSections.has('help') && (
+          <Container maxWidth='lg'>
+            <Fade in timeout={800}>
+              <Box sx={{ textAlign: 'center', mb: 8 }}>
+                <Typography
+                  variant='h3'
+                  component='h2'
+                  sx={{
+                    fontWeight: 'bold',
+                    mb: 3,
+                    fontSize: { xs: '2rem', md: '2.5rem' },
+                  }}
+                >
+                  {t('landing.help.title')}
+                </Typography>
+                <Typography
+                  variant='h6'
+                  color='textSecondary'
+                  sx={{ maxWidth: 600, mx: 'auto' }}
+                >
+                  {t('landing.help.subtitle')}
+                </Typography>
+              </Box>
+            </Fade>
+
+            <Grid container spacing={4}>
+              {[
+                {
+                  icon: (
+                    <Description sx={{ fontSize: 40, color: 'primary.main' }} />
+                  ),
+                  title: t('landing.help.documentation.title'),
+                  description: t('landing.help.documentation.description'),
+                },
+                {
+                  icon: (
+                    <Email sx={{ fontSize: 40, color: 'secondary.main' }} />
+                  ),
+                  title: t('landing.help.support.title'),
+                  description: t('landing.help.support.description'),
+                },
+                {
+                  icon: (
+                    <Schedule sx={{ fontSize: 40, color: 'success.main' }} />
+                  ),
+                  title: t('landing.help.training.title'),
+                  description: t('landing.help.training.description'),
+                },
+              ].map((item, index) => (
+                <Grid item xs={12} md={4} key={index}>
+                  <Grow in timeout={800 + index * 200}>
+                    <Card
+                      sx={{
+                        height: '100%',
+                        transition:
+                          'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+                        '&:hover': {
+                          transform: 'translateY(-8px)',
+                          boxShadow: theme.shadows[8],
+                        },
+                      }}
+                    >
+                      <CardContent sx={{ textAlign: 'center', p: 4 }}>
+                        <Box sx={{ mb: 3 }}>{item.icon}</Box>
+                        <Typography
+                          variant='h6'
+                          component='h3'
+                          sx={{ fontWeight: 'bold', mb: 2 }}
+                        >
+                          {item.title}
+                        </Typography>
+                        <Typography variant='body2' color='textSecondary'>
+                          {item.description}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grow>
+                </Grid>
+              ))}
+            </Grid>
+          </Container>
+        )}
+      </Box>
 
       {/* Benefits Section */}
       <Box sx={{ bgcolor: 'grey.50', py: { xs: 6, md: 10 } }}>
@@ -775,20 +1367,7 @@ const LandingPage = () => {
       </Container>
 
       {/* Footer */}
-      <Box
-        sx={{
-          bgcolor: 'grey.900',
-          color: 'white',
-          py: 4,
-          textAlign: 'center',
-        }}
-      >
-        <Container maxWidth='lg'>
-          <Typography variant='body2' sx={{ opacity: 0.8 }}>
-            {t('landing.footer.copyright')}
-          </Typography>
-        </Container>
-      </Box>
+      <LandingFooter />
 
       <LoginModal
         open={loginModalOpen}
@@ -810,6 +1389,8 @@ const LandingPage = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <ScrollButtons />
     </Box>
   );
 };

@@ -382,47 +382,119 @@ const Layout = ({ children }) => {
     <Box sx={{ display: 'flex' }}>
       <AppBar
         position='fixed'
+        elevation={0}
         sx={{
           width: { md: `calc(100% - ${currentDrawerWidth}px)` },
           ml: { md: `${currentDrawerWidth}px` },
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+          color: 'text.primary',
           transition: theme.transitions.create(['margin', 'width'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
+          '&:hover': {
+            background: 'rgba(255, 255, 255, 0.98)',
+          },
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ minHeight: { xs: 64, md: 72 } }}>
           <IconButton
             color='inherit'
             aria-label='open drawer'
             edge='start'
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' } }}
+            sx={{
+              mr: 2,
+              display: { md: 'none' },
+              p: 1,
+              borderRadius: 2,
+              '&:hover': {
+                background: 'rgba(0, 0, 0, 0.04)',
+                transform: 'scale(1.05)',
+              },
+              transition: 'all 0.2s ease-in-out',
+            }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant='h6' noWrap component='div' sx={{ flexGrow: 1 }}>
+
+          <Typography
+            variant='h6'
+            noWrap
+            component='div'
+            sx={{
+              flexGrow: 1,
+              fontWeight: 700,
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontSize: '1.25rem',
+            }}
+          >
             {navigationItems.find(item => item.path === location.pathname)
               ?.text || t('navigation.dashboard')}
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <LanguageSwitcher />
-            <Typography variant='body2' sx={{ mr: 2 }}>
-              {user?.username}
-            </Typography>
-            <IconButton
-              size='large'
-              edge='end'
-              aria-label='account of current user'
-              aria-controls='menu-appbar'
-              aria-haspopup='true'
-              onClick={handleProfileMenuOpen}
-              color='inherit'
+
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                px: 2,
+                py: 1,
+                borderRadius: 3,
+                background: 'rgba(0, 0, 0, 0.04)',
+                border: '1px solid rgba(0, 0, 0, 0.08)',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  background: 'rgba(0, 0, 0, 0.08)',
+                  transform: 'translateY(-1px)',
+                },
+              }}
             >
-              <Avatar sx={{ width: 32, height: 32 }}>
-                <AccountCircle />
-              </Avatar>
-            </IconButton>
+              <Typography
+                variant='body2'
+                sx={{
+                  fontWeight: 600,
+                  color: 'text.secondary',
+                }}
+              >
+                {user?.username}
+              </Typography>
+              <IconButton
+                size='small'
+                edge='end'
+                aria-label='account of current user'
+                aria-controls='menu-appbar'
+                aria-haspopup='true'
+                onClick={handleProfileMenuOpen}
+                sx={{
+                  p: 0.5,
+                  borderRadius: 2,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    transform: 'scale(1.1)',
+                  },
+                }}
+              >
+                <Avatar
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                  }}
+                >
+                  <AccountCircle />
+                </Avatar>
+              </IconButton>
+            </Box>
           </Box>
         </Toolbar>
       </AppBar>

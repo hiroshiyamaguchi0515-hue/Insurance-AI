@@ -3,6 +3,10 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import CookiePolicy from './pages/CookiePolicy';
+import GDPR from './pages/GDPR';
 import AdminDashboard from './pages/AdminDashboard';
 import CustomerDashboard from './pages/CustomerDashboard';
 import CompanyManagement from './pages/CompanyManagement';
@@ -61,6 +65,10 @@ const AppRoutes = () => {
     return (
       <Routes>
         <Route path='/' element={<LandingPage />} />
+        <Route path='/privacy-policy' element={<PrivacyPolicy />} />
+        <Route path='/terms-of-service' element={<TermsOfService />} />
+        <Route path='/cookie-policy' element={<CookiePolicy />} />
+        <Route path='/gdpr' element={<GDPR />} />
         <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
     );

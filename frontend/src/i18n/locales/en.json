@@ -48,7 +48,8 @@
     "view": "View",
     "language": "Language",
     "details": "Details",
-    "INSURANCE": "Insurance Assistant"
+    "INSURANCE": "Insurance Assistant",
+    "retry": "Retry"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -59,10 +60,7 @@
     "qaLogs": "QA Logs",
     "chat": "Chat",
     "vectorStore": "Vector Store",
-    "systemHealth": "System Health",
     "logout": "Logout",
-    "profile": "Profile",
-    "settings": "Settings",
     "categories": {
       "main": "Main",
       "management": "Management",
@@ -496,37 +494,147 @@
   },
   "landing": {
     "hero": {
-      "title": "AI-powered Insurance Assistant System",
-      "subtitle": "Your intelligent AI companion for instant insurance answers. 24/7 support for policies, claims, and coverage information with advanced AI technology.",
+      "title": "AI-Powered Insurance Assistant System",
+      "subtitle": "Transform your insurance operations with intelligent document analysis, AI agents, and automated customer support",
       "getStarted": "Get Started",
       "learnMore": "Learn More"
     },
+    "nav": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "about": "About",
+      "login": "Login"
+    },
     "features": {
-      "title": "Your AI Insurance Assistant Features",
-      "subtitle": "Everything you need for intelligent insurance assistance and seamless customer support",
+      "title": "Powerful Features",
+      "subtitle": "Everything you need to modernize your insurance business",
       "documentAnalysis": {
-        "title": "Smart Policy Analysis",
-        "description": "AI-powered analysis of insurance policies, contracts, and coverage documents for instant insights"
+        "title": "Document Analysis",
+        "description": "AI-powered analysis of insurance documents, policies, and claims for faster processing"
       },
       "aiAgents": {
-        "title": "Intelligent Insurance Assistant",
-        "description": "Advanced AI assistant that understands insurance terminology and provides accurate policy guidance"
+        "title": "AI Agents",
+        "description": "Intelligent virtual assistants that handle customer inquiries and policy questions 24/7"
       },
       "vectorStore": {
-        "title": "Smart Knowledge Base",
-        "description": "Intelligent database of insurance policies, regulations, and customer information for instant assistance"
+        "title": "Vector Store",
+        "description": "Advanced semantic search and document retrieval for instant access to information"
       },
       "security": {
         "title": "Enterprise Security",
-        "description": "Bank-level security with encrypted storage and HIPAA-compliant data handling for sensitive information"
+        "description": "HIPAA-compliant data handling with bank-level encryption and access controls"
       },
       "performance": {
-        "title": "Instant AI Responses",
-        "description": "Sub-second response times for insurance queries, claims status, and policy questions"
+        "title": "High Performance",
+        "description": "Lightning-fast response times and scalable infrastructure for growing businesses"
       },
       "analytics": {
-        "title": "AI-Powered Insights",
-        "description": "Intelligent analytics on customer interactions, policy inquiries, and support efficiency"
+        "title": "Advanced Analytics",
+        "description": "Comprehensive insights into customer interactions and system performance"
+      }
+    },
+    "pricing": {
+      "title": "Simple, Transparent Pricing",
+      "subtitle": "Choose the plan that fits your business needs",
+      "mostPopular": "Most Popular",
+      "getStarted": "Get Started",
+      "starter": {
+        "title": "Starter",
+        "price": "$99/month",
+        "description": "Perfect for small insurance agencies",
+        "features": [
+          "Up to 1,000 documents/month",
+          "Basic AI agent support",
+          "Email support",
+          "Standard security features"
+        ]
+      },
+      "professional": {
+        "title": "Professional",
+        "price": "$299/month",
+        "description": "Ideal for growing insurance companies",
+        "features": [
+          "Up to 10,000 documents/month",
+          "Advanced AI agents",
+          "Priority support",
+          "Enhanced security features",
+          "Custom integrations"
+        ]
+      },
+      "enterprise": {
+        "title": "Enterprise",
+        "price": "Custom",
+        "description": "For large insurance corporations",
+        "features": [
+          "Unlimited documents",
+          "Custom AI agent training",
+          "Dedicated support team",
+          "Advanced security & compliance",
+          "White-label solutions",
+          "Custom development"
+        ]
+      }
+    },
+    "about": {
+      "title": "About Our Company",
+      "subtitle": "Leading the future of insurance technology",
+      "description": "We are a team of insurance and technology experts dedicated to transforming how insurance companies operate. Our AI-powered platform combines cutting-edge technology with deep industry knowledge to deliver solutions that drive efficiency, improve customer satisfaction, and reduce operational costs.",
+      "getStarted": "Get Started Today",
+      "learnMore": "Learn More"
+    },
+    "security": {
+      "title": "Enterprise-Grade Security",
+      "subtitle": "Your data is protected with the highest security standards",
+      "encryption": {
+        "title": "Bank-Level Encryption",
+        "description": "All data is encrypted using AES-256 encryption both in transit and at rest"
+      },
+      "compliance": {
+        "title": "HIPAA Compliance",
+        "description": "Full compliance with healthcare data protection regulations and standards"
+      },
+      "access": {
+        "title": "Access Control",
+        "description": "Role-based access control with multi-factor authentication and audit logs"
+      }
+    },
+    "blog": {
+      "title": "Latest Insights & News",
+      "subtitle": "Stay updated with the latest trends in insurance technology",
+      "readMore": "Read More",
+      "article1": {
+        "title": "The Future of AI in Insurance",
+        "excerpt": "Discover how artificial intelligence is revolutionizing the insurance industry and what it means for your business.",
+        "date": "August 15, 2024",
+        "category": "AI Technology"
+      },
+      "article2": {
+        "title": "Improving Customer Experience with Chatbots",
+        "excerpt": "Learn how intelligent chatbots are enhancing customer service and reducing response times in insurance.",
+        "date": "August 10, 2024",
+        "category": "Customer Experience"
+      },
+      "article3": {
+        "title": "Data Security Best Practices for Insurance",
+        "excerpt": "Essential security measures every insurance company should implement to protect sensitive customer data.",
+        "date": "August 5, 2024",
+        "category": "Security"
+      }
+    },
+    "help": {
+      "title": "Help & Support",
+      "subtitle": "Get the assistance you need to succeed with our platform",
+      "documentation": {
+        "title": "Comprehensive Documentation",
+        "description": "Access detailed guides, tutorials, and best practices for using our AI insurance platform"
+      },
+      "support": {
+        "title": "24/7 Support",
+        "description": "Get help anytime with our dedicated support team and AI-powered assistance"
+      },
+      "training": {
+        "title": "Training & Onboarding",
+        "description": "Learn how to maximize the value of our platform with personalized training sessions"
       }
     },
     "benefits": {
@@ -605,13 +713,29 @@
       }
     },
     "footer": {
-      "copyright": "© 2025 AI-powered Insurance Assistant System. All rights reserved. Powered by AI."
-    },
-    "nav": {
+      "copyright": "© 2025 AI-powered Insurance Assistant System. All rights reserved. Powered by AI.",
+      "product": "Product",
+      "company": "Company",
+      "support": "Support",
+      "legal": "Legal",
       "features": "Features",
       "pricing": "Pricing",
+      "security": "Security",
+      "api": "API",
       "about": "About",
-      "login": "Login"
+      "careers": "Careers",
+      "contact": "Contact",
+      "blog": "Blog",
+      "helpCenter": "Help Center",
+      "documentation": "Documentation",
+      "status": "Status",
+      "contactSupport": "Contact Support",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "cookiePolicy": "Cookie Policy",
+      "gdpr": "GDPR",
+      "systemStatus": "System Status: Operational",
+      "description": "Your intelligent AI companion for instant insurance answers. 24/7 support for policies, claims, and coverage information with advanced AI technology."
     }
   }
 }
